@@ -1,0 +1,191 @@
+#!/usr/bin/env zsh
+# GoblinOS API Keys Setup Script
+#
+# Usage:
+#   1. Copy this file: cp api_keys_setup.sh.example api_keys_setup.sh
+#   2. Edit api_keys_setup.sh with your actual API keys
+#   3. Source it: source api_keys_setup.sh
+#   OR add to your ~/.zshrc: source /path/to/GoblinOS/api_keys_setup.sh
+#
+# Security Notes:
+#   - This file should be in .gitignore
+#   - Use chmod 600 to restrict permissions
+#   - Never commit actual API keys to git
+
+# =============================================================================
+# AI Provider API Keys
+# =============================================================================
+
+# OpenAI (GPT-4, GPT-3.5-turbo)
+# Get your key from: https://platform.openai.com/api-keys
+export OPENAI_API_KEY="sk-proj-..."
+
+# Anthropic (Claude 3.5 Sonnet, Claude 3 Opus)
+# Get your key from: https://console.anthropic.com/settings/keys
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# Google Gemini (Gemini Pro, Gemini Flash)
+# Get your key from: https://makersuite.google.com/app/apikey
+export GEMINI_API_KEY="AIza..."
+
+# DeepSeek (if using cloud API)
+# Get your key from: https://platform.deepseek.com/api_keys
+export DEEPSEEK_API_KEY="sk-..."
+
+# =============================================================================
+# Local Model Configuration
+# =============================================================================
+
+# Ollama endpoint (default: http://localhost:11434)
+export OLLAMA_BASE_URL="http://localhost:11434"
+export OLLAMA_MODEL="qwen2.5:3b"
+
+# =============================================================================
+# GoblinOS Configuration
+# =============================================================================
+
+# Path to goblins.yaml config file
+export GOBLINOS_CONFIG="${HOME}/ForgeMonorepo/GoblinOS/goblins.yaml"
+
+# SQLite database path
+export GOBLIN_DB_PATH="${HOME}/.goblinos/goblin-memory.db"
+
+# Temporary directory (important on macOS)
+export TMPDIR="/tmp"
+
+# =============================================================================
+# Development Settings
+# =============================================================================
+
+# Enable debug mode
+export DEBUG="false"
+export LOG_LEVEL="info"
+export TELEMETRY_ENABLED="false"
+
+# =============================================================================
+# Cost Tracking
+# =============================================================================
+
+export COST_TRACKING_ENABLED="true"
+export COST_ALERT_THRESHOLD="10.00"
+
+# =============================================================================
+# Helper Functions
+# =============================================================================
+
+# Check if API keys are set
+goblin_check_keys() {
+  echo "🔍 Checking API keys..."
+  echo ""
+
+  # Check each provider
+  if [[ -n "$OPENAI_API_KEY" && "$OPENAI_API_KEY" != "sk-proj-..." ]]; then
+    echo "✅ OpenAI API key set"
+  else
+    echo "⚠️  OpenAI API key NOT set (Ollama will be used as fallback)"
+  fi
+
+  if [[ -n "$ANTHROPIC_API_KEY" && "$ANTHROPIC_API_KEY" != "sk-ant-..." ]]; then
+    echo "✅ Anthropic API key set"
+  else
+    echo "⚠️  Anthropic API key NOT set"
+  fi
+
+  if [[ -n "$GEMINI_API_KEY" && "$GEMINI_API_KEY" != "AIza..." ]]; then
+    echo "✅ Gemini API key set"
+  else
+    echo "⚠️  Gemini API key NOT set"
+  fi
+
+  if [[ -n "$DEEPSEEK_API_KEY" && "$DEEPSEEK_API_KEY" != "sk-..." ]]; then
+    echo "✅ DeepSeek API key set"
+  else
+    echo "⚠️  DeepSeek API key NOT set"
+  fi
+
+  echo ""
+  echo "📊 Available providers:"
+  cd "${HOME}/ForgeMonorepo/GoblinOS/desktop" 2>/dev/null
+  if [[ $? -eq 0 ]]; then
+    # If in GoblinOS Desktop, could check providers via Tauri
+    echo "   - Ollama (local, always available)"
+    [[ -n "$OPENAI_API_KEY" && "$OPENAI_API_KEY" != "sk-proj-..." ]] && echo "   - OpenAI"
+    [[ -n "$ANTHROPIC_API_KEY" && "$ANTHROPIC_API_KEY" != "sk-ant-..." ]] && echo "   - Anthropic"
+    [[ -n "$GEMINI_API_KEY" && "$GEMINI_API_KEY" != "AIza..." ]] && echo "   - Gemini"
+  fi
+}
+
+# Test API key validity (simple check)
+goblin_test_keys() {
+  echo "🧪 Testing API keys..."
+  echo ""
+
+  # Test OpenAI
+  if [[ -n "$OPENAI_API_KEY" && "$OPENAI_API_KEY" != "sk-proj-..." ]]; then
+    echo -n "Testing OpenAI... "
+    response=$(curl -s -w "%{http_code}" -o /dev/null \
+      -H "Authorization: Bearer $OPENAI_API_KEY" \
+      https://api.openai.com/v1/models)
+
+    if [[ "$response" == "200" ]]; then
+      echo "✅ Valid"
+    else
+      echo "❌ Invalid (HTTP $response)"
+    fi
+  fi
+
+  # Test Anthropic
+  if [[ -n "$ANTHROPIC_API_KEY" && "$ANTHROPIC_API_KEY" != "sk-ant-..." ]]; then
+    echo -n "Testing Anthropic... "
+    response=$(curl -s -w "%{http_code}" -o /dev/null \
+      -H "x-api-key: $ANTHROPIC_API_KEY" \
+      -H "anthropic-version: 2023-06-01" \
+      https://api.anthropic.com/v1/messages \
+      -X POST -d '{"model":"claude-3-5-sonnet-20241022","messages":[{"role":"user","content":"hi"}],"max_tokens":1}')
+
+    if [[ "$response" == "200" ]]; then
+      echo "✅ Valid"
+    else
+      echo "❌ Invalid (HTTP $response)"
+    fi
+  fi
+
+  # Test Ollama
+  echo -n "Testing Ollama... "
+  response=$(curl -s -w "%{http_code}" -o /dev/null http://localhost:11434/api/tags)
+  if [[ "$response" == "200" ]]; then
+    echo "✅ Running"
+  else
+    echo "❌ Not running (start with: ollama serve)"
+  fi
+}
+
+# Unset all API keys (for security)
+goblin_clear_keys() {
+  echo "🧹 Clearing API keys from environment..."
+  unset OPENAI_API_KEY
+  unset ANTHROPIC_API_KEY
+  unset GEMINI_API_KEY
+  unset DEEPSEEK_API_KEY
+  echo "✅ Keys cleared"
+}
+
+# =============================================================================
+# Aliases
+# =============================================================================
+
+alias goblin-keys="goblin_check_keys"
+alias goblin-test="goblin_test_keys"
+alias goblin-clear="goblin_clear_keys"
+
+# =============================================================================
+# Auto-check on source (optional)
+# =============================================================================
+
+# Uncomment to automatically check keys when sourcing this file
+# goblin_check_keys
+
+echo "✅ GoblinOS API keys loaded"
+echo "   Run 'goblin-keys' to check status"
+echo "   Run 'goblin-test' to test API validity"
+echo "   Run 'goblin-clear' to unset keys"

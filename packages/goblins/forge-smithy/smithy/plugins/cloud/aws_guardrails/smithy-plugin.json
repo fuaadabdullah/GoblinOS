@@ -1,0 +1,14 @@
+{
+	"name": "cloud-aws-guardrails",
+	"version": "0.1.0",
+	"description": "Static guardrail checks for AWS environments",
+	"author": "Smithy Core",
+	"license": "MIT",
+	"categories": ["cloud"],
+	"capabilities": ["config:read", "extensions:register"],
+	"entry_point": "smithy.plugins.cloud.aws_guardrails.plugin:AWSGuardrailsPlugin",
+	"config": {
+		"required_services": ["cloudtrail", "config"],
+		"critical_regions": ["us-east-1", "us-west-2"]
+	}
+}

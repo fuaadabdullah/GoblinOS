@@ -1,0 +1,37 @@
+{
+	"name": "@goblinos/overmind-temporal",
+	"version": "1.0.0",
+	"description": "Temporal workflows for Overmind memory consolidation",
+	"private": true,
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"scripts": {
+		"build": "tsc",
+		"build.watch": "tsc --watch",
+		"worker": "node dist/worker.js",
+		"worker.watch": "nodemon --watch src --exec \"npm run build && npm run worker\"",
+		"schedule:setup": "node dist/schedules/setup.js",
+		"lint": "biome check .",
+		"format": "biome format --write .",
+		"test": "vitest run",
+		"test:watch": "vitest"
+	},
+	"dependencies": {
+		"@temporalio/activity": "^1.11.3",
+		"@temporalio/client": "^1.11.3",
+		"@temporalio/worker": "^1.11.3",
+		"@temporalio/workflow": "^1.11.3",
+		"axios": "^1.7.7"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
+		"@temporalio/testing": "^1.11.3",
+		"@types/node": "^22.8.6",
+		"nodemon": "^3.1.7",
+		"typescript": "^5.6.2",
+		"vitest": "^2.1.4"
+	},
+	"engines": {
+		"node": ">=20"
+	}
+}

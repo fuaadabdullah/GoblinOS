@@ -1,0 +1,13 @@
+{
+	"name": "tooling-docker-daemon",
+	"version": "0.1.0",
+	"description": "Observability and configuration helpers for dockerd",
+	"author": "Smithy Core",
+	"license": "MIT",
+	"categories": ["tool", "infrastructure"],
+	"capabilities": ["config:read", "config:write", "extensions:register"],
+	"entry_point": "smithy.plugins.tooling.docker_daemon.plugin:DockerDaemonPlugin",
+	"config": {
+		"default_config_path": "/etc/docker/daemon.json"
+	}
+}

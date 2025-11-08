@@ -1,0 +1,552 @@
+#!/usr/bin/env node
+/**
+ * Goblin CLI
+ * Subcommands:
+ *   ask <goblinId|name> "<task>" [--dry-run] [--json] [--no-color]
+ *        [--routing-preference <local|remote>] [--routing-model <model>] [--routing-complexity <low|medium|high>]
+ *        [-R <local|remote>] [-M <model>] [-C <low|medium|high>]
+ *   run <goblinId> "<intent>" [--dry-run] [--json] [--no-color]
+ *   listen --goblin <goblinId> [--json] [--no-color]
+ *        [--routing-preference <local|remote>] [--routing-model <model>] [--routing-complexity <low|medium|high>]
+ *        [-R <local|remote>] [-M <model>] [-C <low|medium|high>]
+ *
+ * Examples:
+ *   node GoblinOS/bin/goblin ask vanta-lumin "start portfolio dev server"
+ *   pnpm --filter goblinos goblin ask magnolia-nightbloom "run tests" --dry-run
+ */
+
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import yaml from 'yaml'
+import OpenAI from 'openai'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const repoRoot = path.resolve(__dirname, '..')
+
+function usage(code = 0) {
+  console.log(`Goblin CLI\n\nUsage:\n  node GoblinOS/bin/goblin ask <goblinId|name> "<task>" [--dry-run] [--json] [--no-color]\n         [--routing-preference <local|remote>] [--routing-model <model>] [--routing-complexity <low|medium|high>]\n         [-R <local|remote>] [-M <model>] [-C <low|medium|high>]\n  node GoblinOS/bin/goblin run <goblinId> "<intent>" [--dry-run] [--json] [--no-color]\n  node GoblinOS/bin/goblin listen --goblin <goblinId> [--json] [--no-color]\n`)
+  process.exit(code)
+}
+
+function parseArgs(argv) {
+  const out = { cmd: '', who: '', task: '', dryRun: false, json: false, noColor: false, routingPreference: '', routingModel: '', routingComplexity: '' }
+  const args = argv.slice(2)
+  out.cmd = args[0] || ''
+  if (out.cmd === 'ask') {
+    out.who = args[1] || ''
+    out.task = args[2] || ''
+    for (let i = 3; i < args.length; i++) {
+      if (args[i] === '--dry-run') out.dryRun = true
+      else if (args[i] === '--json') out.json = true
+      else if (args[i] === '--no-color' || args[i] === '--no-colour') out.noColor = true
+      else if (args[i] === '--routing-preference' && args[i + 1]) out.routingPreference = String(args[++i])
+      else if (args[i] === '--routing-model' && args[i + 1]) out.routingModel = String(args[++i])
+      else if (args[i] === '--routing-complexity' && args[i + 1]) out.routingComplexity = String(args[++i])
+      else if (args[i] === '-R' && args[i + 1]) out.routingPreference = String(args[++i])
+      else if (args[i] === '-M' && args[i + 1]) out.routingModel = String(args[++i])
+      else if (args[i] === '-C' && args[i + 1]) out.routingComplexity = String(args[++i])
+    }
+  }
+  if (out.cmd === 'run') {
+    out.who = args[1] || ''
+    out.task = args[2] || ''
+    for (let i = 3; i < args.length; i++) {
+      if (args[i] === '--dry-run') out.dryRun = true
+      else if (args[i] === '--json') out.json = true
+      else if (args[i] === '--no-color' || args[i] === '--no-colour') out.noColor = true
+    }
+  }
+  if (out.cmd === 'listen') {
+    for (let i = 1; i < args.length; i++) {
+      if (args[i] === '--goblin' && args[i + 1]) out.who = args[++i]
+      else if (args[i] === '--json') out.json = true
+      else if (args[i] === '--no-color' || args[i] === '--no-colour') out.noColor = true
+    }
+  }
+  return out
+}
+
+function loadConfig() {
+  const configPath = path.join(repoRoot, 'goblins.yaml')
+  const raw = readFileSync(configPath, 'utf8')
+  return yaml.parse(raw)
+}
+
+function slugId(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+}
+
+function findGoblin(config, key) {
+  const needle = key.toLowerCase()
+  for (const guild of config.guilds || []) {
+    for (const member of guild.members || []) {
+      const id = member.id || ''
+      const title = member.title || ''
+      const name = member.name || title || id
+      if (
+        id.toLowerCase() === needle ||
+        slugId(name) === slugId(needle) ||
+        name.toLowerCase() === needle ||
+        title.toLowerCase() === needle
+      ) {
+        return { guild, member }
+      }
+    }
+  }
+  return null
+}
+
+const ROUTER_MODEL_MAP = {
+  'deepseek-r1': 'deepseek-r1',
+  openai: 'gpt-4-turbo',
+  gemini: 'gemini-pro',
+}
+
+function modelChainFor(member) {
+  // Env-priority path
+  const fallbacks = (process.env.FALLBACK_MODELS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  if (process.env.OLLAMA_BASE_URL) {
+    const primary = process.env.OLLAMA_DEFAULT_MODEL || 'llama3.2'
+    return [primary, ...fallbacks]
+  }
+
+  // Registry-derived
+  const brain = member.brain || {}
+  const local = Array.isArray(brain.local) ? brain.local : []
+  const routers = Array.isArray(brain.routers) ? brain.routers : []
+  const mappedRouters = routers.map((r) => ROUTER_MODEL_MAP[r] || r)
+  const primary = local[0] || mappedRouters[0] || process.env.DEFAULT_MODEL || 'gpt-4-turbo'
+  const rest = [...local.slice(1), ...mappedRouters.slice(1)]
+  return [primary, ...rest, ...fallbacks]
+}
+
+function estimateComplexity(task) {
+  const text = String(task || '').toLowerCase()
+  const words = text.split(/\s+/).filter(Boolean)
+  const hiKeywords = ['design', 'architecture', 'rewrite', 'refactor', 'end-to-end', 'full', 'spec']
+  const loKeywords = ['typo', 'rename', 'format', 'lint', 'small', 'quick']
+  const hiHits = hiKeywords.some((k) => text.includes(k))
+  const loHits = loKeywords.some((k) => text.includes(k))
+  if (hiHits || words.length > 120) return 'high'
+  if (loHits || words.length < 30) return 'low'
+  return 'medium'
+}
+
+function reorderChainForComplexity(guild, member, task, chain, forcedComplexity, preference) {
+  const brain = member.brain || {}
+  const locals = Array.isArray(brain.local) ? brain.local.slice() : []
+  const routers = Array.isArray(brain.routers) ? brain.routers.slice() : []
+  const ROUTER_MODEL_MAP = { 'deepseek-r1': 'deepseek-r1', openai: 'gpt-4-turbo', gemini: 'gemini-pro' }
+  const mappedRouters = routers.map((r) => ROUTER_MODEL_MAP[r] || r)
+  const complexity = forcedComplexity || estimateComplexity(task)
+  const uniq = (arr) => Array.from(new Set(arr))
+  if (preference === 'remote') return uniq([...mappedRouters, ...locals, ...chain])
+  if (preference === 'local') return uniq([...locals, ...mappedRouters, ...chain])
+  if (complexity === 'high') {
+    return uniq([...mappedRouters, ...locals, ...chain])
+  }
+  if (complexity === 'low') {
+    return uniq([...locals, ...mappedRouters, ...chain])
+  }
+  return chain
+}
+
+function providerClient() {
+  if (process.env.OLLAMA_BASE_URL) {
+    const base = process.env.OLLAMA_BASE_URL.replace(/\/$/, '') + '/v1'
+    return new OpenAI({ baseURL: base, apiKey: process.env.OLLAMA_API_KEY || 'ollama' })
+  }
+  if (process.env.DEEPSEEK_API_KEY) {
+    const base = (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '') + '/v1'
+    return new OpenAI({ baseURL: base, apiKey: process.env.DEEPSEEK_API_KEY })
+  }
+  const base = process.env.LITELLM_BASE_URL || 'http://litellm:4000'
+  return new OpenAI({ baseURL: base, apiKey: process.env.LITELLM_API_KEY || 'dummy' })
+}
+
+function makeFmt(noColor) {
+  const c = (code) => (s) => (noColor || process.env.NO_COLOR ? String(s) : `\u001b[${code}m${s}\u001b[0m`)
+  return {
+    bold: c('1'),
+    dim: c('2'),
+    cyan: c('36'),
+    section(title) {
+      console.log('\n' + c('1')(title))
+      console.log(c('2')('─'.repeat(Math.max(12, String(title).length))))
+    },
+    kv(k, v) {
+      console.log(`${c('36')(k)}: ${v}`)
+    },
+  }
+}
+
+function buildSystemPrompt(guild, member) {
+  const prompt = (member.prompt && member.prompt.system) || null
+  if (prompt) return prompt
+  const lines = []
+  const title = member.title || member.name
+  lines.push(`You are ${title}, a focused engineering assistant.`)
+  if (Array.isArray(member.responsibilities) && member.responsibilities.length) {
+    lines.push('Primary duties:')
+    for (const r of member.responsibilities) lines.push(`- ${r}`)
+  }
+  if (Array.isArray(member.kpis) && member.kpis.length) {
+    lines.push('Key performance indicators:')
+    for (const k of member.kpis) lines.push(`- ${k}`)
+  }
+  lines.push('Behaviors: be concise, avoid hallucinations, state assumptions, and output testable steps.')
+  if ((guild.verbosity || 'normal') === 'terse') {
+    lines.push('Be terse. Use bullets; omit filler.')
+  } else if ((guild.verbosity || 'normal') === 'verbose') {
+    lines.push('Be thorough; include brief rationale and trade-offs.')
+  }
+  return lines.join('\n')
+}
+
+function buildUserPrompt(guild, member, task) {
+  const style = (member.prompt && member.prompt.style) || []
+  const parts = [`Task: ${task}`]
+  if (style.length) {
+    parts.push('Guidelines:')
+    for (const s of style) parts.push(`- ${s}`)
+  }
+  return parts.join('\n')
+}
+
+// ----------------------- Intent Runner Helpers -----------------------
+function normalize(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+function tokens(s) {
+  return new Set(normalize(s).split(' ').filter(Boolean))
+}
+function similarity(a, b) {
+  const A = tokens(a)
+  const B = tokens(b)
+  if (A.size === 0) return 0
+  let inter = 0
+  for (const t of A) if (B.has(t)) inter++
+  return inter / A.size
+}
+function selectToolsForIntent(goblin, intent) {
+  const rules = goblin?.tools?.selection_rules || []
+  const intentNorm = normalize(intent)
+  const picked = []
+  const add = (t) => {
+    if (!t) return
+    if (!picked.includes(t)) picked.push(t)
+  }
+  for (const rule of rules) {
+    if (!rule || typeof rule.trigger !== 'string') continue
+    if (intentNorm.includes(normalize(rule.trigger))) add(rule.tool)
+  }
+  if (picked.length === 0) {
+    for (const rule of rules) {
+      const score = similarity(rule.trigger, intent)
+      if (score >= 0.6) add(rule.tool)
+    }
+  }
+  return picked
+}
+function getToolCommand(guild, toolId) {
+  const tool = (guild.toolbelt || []).find((t) => t.id === toolId)
+  return tool ? { command: tool.command, meta: tool } : { command: null, meta: null }
+}
+async function runShell(command, label = 'goblin', ctx = {}) {
+  const { spawn } = await import('node:child_process')
+  const started = Date.now()
+  const segments = String(command).split(' ').filter(Boolean)
+  const cmd = segments[0]
+  const args = segments.slice(1)
+  await new Promise((resolvePromise, reject) => {
+    const child = spawn(cmd, args, { cwd: path.resolve(__dirname, '..'), stdio: 'inherit', shell: true })
+    child.on('exit', (code) => {
+      const ok = code === 0
+      if (ok) resolvePromise(undefined)
+      else reject(new Error(`${label} failed with exit code ${code}`))
+    })
+    child.on('error', reject)
+  })
+  try {
+    const url = process.env.GOBLIN_BRIDGE_URL || 'http://localhost:3030'
+    await fetch(`${url.replace(/\/$/, '')}/kpi/tool-invocation`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        goblin: ctx.goblin || 'unknown',
+        tool: ctx.tool || label,
+        command,
+        success: true,
+        duration_ms: Date.now() - started,
+      }),
+    })
+  } catch {}
+}
+
+async function runIntent(guild, member, intent, { dryRun, json, noColor }) {
+  const fmt = makeFmt(noColor)
+  const tools = selectToolsForIntent(member, intent).filter(Boolean)
+  if (tools.length === 0) {
+    const msg = 'No external tool selected (brain-only)'
+    return json ? console.log(JSON.stringify({ goblin: member.id, guild: guild.name, intent, tools: [] }, null, 2)) : console.log(msg)
+  }
+  const owned = Array.isArray(member?.tools?.owned) ? member.tools.owned : []
+  for (const t of tools) {
+    if (!owned.includes(t)) throw new Error(`Permission error: ${member.id} does not own tool ${t}`)
+  }
+  const resolved = tools.map((tid) => ({ tid, ...getToolCommand(guild, tid) }))
+  for (const r of resolved) if (!r.command) throw new Error(`Tool ${r.tid} not found in ${guild.name}`)
+
+  const result = {
+    goblin: member.id,
+    guild: guild.name,
+    intent,
+    tools: resolved.map((r) => ({ id: r.tid, name: r.meta?.name, command: r.command })),
+  }
+  if (json) {
+    console.log(JSON.stringify(result, null, 2))
+  } else {
+    fmt.section('Goblin Run')
+    fmt.kv('Goblin', member.id)
+    fmt.kv('Guild', guild.name)
+    fmt.kv('Intent', intent)
+    fmt.kv('Selected', tools.join(', '))
+    for (const r of resolved) console.log(`- ${fmt.bold(r.tid)} ${fmt.dim(`(${r.meta?.name || ''})`)}\n  cmd: ${r.command}`)
+  }
+  if (dryRun) return
+  for (const r of resolved) {
+    await runShell(r.command, r.meta?.name || r.tid, { goblin: member.id, tool: r.tid })
+  }
+}
+
+async function ask(guild, member, task, { dryRun, json, noColor, routingPreference, routingModel, routingComplexity }) {
+  let chain = modelChainFor(member)
+  chain = reorderChainForComplexity(
+    guild,
+    member,
+    task,
+    chain,
+    routingComplexity && ['low', 'medium', 'high'].includes(routingComplexity) ? routingComplexity : undefined,
+    routingPreference && ['local', 'remote'].includes(routingPreference) ? routingPreference : undefined
+  )
+  if (routingModel) {
+    // Validate forced model exists on current provider/gateway before prioritizing
+    const models = await listAvailableModels()
+    const allIds = models.map((m) => m.id)
+    if (allIds.includes(routingModel)) {
+      const uniq = (arr) => Array.from(new Set(arr))
+      chain = uniq([routingModel, ...chain])
+    } else {
+      console.warn(`[routing] Model '${routingModel}' not found on active provider. Leaving chain unchanged.`)
+    }
+  }
+  const client = providerClient()
+  const system = buildSystemPrompt(guild, member)
+  const examples = (member.prompt && member.prompt.examples) || []
+  const user = buildUserPrompt(guild, member, task)
+
+  const messages = [{ role: 'system', content: system }]
+  for (const ex of examples) {
+    if (!ex || !ex.user || !ex.assistant) continue
+    messages.push({ role: 'user', content: String(ex.user) })
+    messages.push({ role: 'assistant', content: String(ex.assistant) })
+  }
+  messages.push({ role: 'user', content: user })
+
+  const brain = member.brain || {}
+  const baseMax = typeof brain.max_tokens === 'number' ? brain.max_tokens : 2048
+  let appliedMax = baseMax
+  if ((guild.verbosity || 'normal') === 'terse') appliedMax = Math.min(baseMax, 700)
+  if ((guild.verbosity || 'normal') === 'verbose') appliedMax = Math.max(baseMax, 2200)
+
+  if (dryRun) {
+    const preview = {
+      goblin: member.id,
+      guild: guild.name,
+      models: chain,
+      verbosity: guild.verbosity || 'normal',
+      maxTokens: appliedMax,
+      messages,
+      routing: {
+        preference: routingPreference || undefined,
+        model: routingModel || undefined,
+        complexity: routingComplexity || undefined,
+      },
+    }
+    if (json) {
+      console.log(JSON.stringify(preview, null, 2))
+    } else {
+      const fmt = makeFmt(noColor)
+      const trunc = (s, n = 120) => (String(s).length > n ? String(s).slice(0, n - 1) + '…' : String(s))
+      fmt.section('Goblin Ask Preview')
+      fmt.kv('Goblin', member.id)
+      fmt.kv('Guild', guild.name)
+      fmt.kv('Verbosity', preview.verbosity)
+      fmt.kv('maxTokens', preview.maxTokens)
+      fmt.kv('Models', chain.join(', '))
+      if (routingPreference) fmt.kv('Routing Preference', routingPreference)
+      if (routingModel) fmt.kv('Routing Model', routingModel)
+      if (routingComplexity) fmt.kv('Routing Complexity', routingComplexity)
+      fmt.section('Messages')
+      for (const m of messages) {
+        console.log(`- ${fmt.bold(m.role)}: ${trunc(m.content)}`)
+      }
+    }
+    return
+  }
+
+  let lastErr = null
+  for (const model of chain) {
+    try {
+      const res = await client.chat.completions.create({ model, messages, max_tokens: appliedMax })
+      const choice = res.choices?.[0]
+      const content = Array.isArray(choice?.message?.content)
+        ? choice.message.content.map((p) => (typeof p === 'string' ? p : p?.text || '')).join('')
+        : choice?.message?.content || ''
+      if (json) {
+        console.log(
+          JSON.stringify(
+            { model: res.model || model, goblin: member.id, guild: guild.name, content },
+            null,
+            2
+          )
+        )
+      } else {
+        const fmt = makeFmt(noColor)
+        fmt.section('Goblin Ask')
+        fmt.kv('Goblin', member.id)
+        fmt.kv('Guild', guild.name)
+        fmt.kv('Model', res.model || model)
+        fmt.section('Response')
+        console.log(content)
+      }
+      // KPI: record ask request
+      try {
+        const url = process.env.GOBLIN_BRIDGE_URL || 'http://localhost:3030'
+        await fetch(`${url.replace(/\/$/, '')}/kpi/event`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            guild: guild.name,
+            goblin: member.id,
+            kpi: 'goblin_ask_requests',
+            value: 1,
+            source: 'goblin-cli',
+            context: { model: res.model || model, content_length: String(content).length },
+          }),
+        })
+      } catch {}
+      return
+    } catch (err) {
+      lastErr = err
+      // try next model
+    }
+  }
+  console.error('All model attempts failed:', lastErr?.message || lastErr)
+  process.exit(1)
+}
+
+async function listAvailableModels() {
+  // Returns array of { id: string }
+  if (process.env.OLLAMA_BASE_URL) {
+    const base = process.env.OLLAMA_BASE_URL.replace(/\/$/, '')
+    const url = `${base}/api/tags`
+    try {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      const models = Array.isArray(data?.models) ? data.models : []
+      return models.map((m) => ({ id: m?.name })).filter((m) => !!m.id)
+    } catch (e) {
+      console.warn(`[routing] Could not list Ollama models from ${url}: ${e?.message || e}`)
+      return []
+    }
+  }
+  // OpenAI-compatible endpoints (DeepSeek, OpenAI, LiteLLM)
+  try {
+    const client = providerClient()
+    const res = await client.models.list()
+    const items = Array.isArray(res?.data) ? res.data : []
+    return items.map((m) => ({ id: m.id }))
+  } catch (e) {
+    console.warn(`[routing] Could not list models from provider: ${e?.message || e}`)
+    return []
+  }
+}
+
+async function main() {
+  const args = parseArgs(process.argv)
+  if (!args.cmd || args.cmd === '--help' || args.cmd === '-h') return usage(0)
+  if (args.cmd === 'ask') {
+    if (!args.who || !args.task) return usage(1)
+    const config = loadConfig()
+    const found = findGoblin(config, args.who)
+    if (!found) {
+      console.error(`Goblin not found: ${args.who}`)
+      process.exit(1)
+    }
+    await ask(found.guild, found.member, args.task, {
+      dryRun: args.dryRun,
+      json: args.json,
+      noColor: args.noColor,
+      routingPreference: args.routingPreference,
+      routingModel: args.routingModel,
+      routingComplexity: args.routingComplexity,
+    })
+    return
+  }
+
+  if (args.cmd === 'run') {
+    if (!args.who || !args.task) return usage(1)
+    const config = loadConfig()
+    const found = findGoblin(config, args.who)
+    if (!found) {
+      console.error(`Goblin not found: ${args.who}`)
+      process.exit(1)
+    }
+    await runIntent(found.guild, found.member, args.task, { dryRun: args.dryRun, json: args.json, noColor: args.noColor })
+    return
+  }
+
+  if (args.cmd === 'listen') {
+    if (!args.who) return usage(1)
+    const config = loadConfig()
+    const found = findGoblin(config, args.who)
+    if (!found) {
+      console.error(`Goblin not found: ${args.who}`)
+      process.exit(1)
+    }
+    console.log(`Listening for intents on stdin as ${found.member.id}. Type Ctrl-C to exit.`)
+    process.stdin.setEncoding('utf8')
+    process.stdin.on('data', async (chunk) => {
+      const line = String(chunk).trim()
+      if (!line) return
+      try {
+        await runIntent(found.guild, found.member, line, { dryRun: false, json: args.json, noColor: args.noColor })
+      } catch (e) {
+        console.error('run failed:', e?.message || e)
+      }
+    })
+    return
+  }
+
+  return usage(1)
+}
+
+main().catch((err) => {
+  console.error(err?.message || err)
+  process.exit(1)
+})

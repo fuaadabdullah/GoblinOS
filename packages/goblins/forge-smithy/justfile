@@ -1,0 +1,55 @@
+# Justfile for Forge Smithy development tasks
+
+# Default recipe
+default:
+    just --list
+
+# Install dependencies
+install:
+    uv sync
+
+# Run the smithy CLI check
+check:
+    uv run smithy check
+
+# Run the smithy service
+serve:
+    uv run uvicorn smithy.service:app --reload --host {{env_var_or_default('SMITHY_HOST', '127.0.0.1')}} --port {{env_var_or_default('SMITHY_PORT', '8002')}}
+
+# Run tests
+test:
+    uv run pytest
+
+# Run tests with coverage
+test-cov:
+    uv run pytest --cov=smithy --cov-report=html --cov-report=term
+
+# Run linting
+lint:
+    uv run ruff check .
+    uv run ruff format --check .
+
+# Fix linting issues
+lint-fix:
+    uv run ruff check --fix .
+    uv run ruff format .
+
+# Type checking
+typecheck:
+    uv run mypy .
+
+# Bootstrap a new project
+bootstrap:
+    uv run smithy bootstrap
+
+# Run doctor checks
+doctor:
+    uv run smithy doctor
+
+# Clean up
+clean:
+    rm -rf .pytest_cache .coverage htmlcov dist build *.egg-info
+    find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+
+# Full development setup check
+verify: lint typecheck test

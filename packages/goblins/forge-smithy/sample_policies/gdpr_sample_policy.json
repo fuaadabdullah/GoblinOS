@@ -1,0 +1,103 @@
+{
+	"id": "gdpr-sample-policy-v1.0",
+	"name": "GDPR Compliance Policy - Sample Implementation",
+	"description": "Sample GDPR compliance policy demonstrating data protection requirements",
+	"framework": "gdpr",
+	"version": "1.0",
+	"effective_date": "2025-10-26T04:55:46.337335",
+	"review_date": "2026-10-26T04:55:46.337343",
+	"owner": "Compliance Team",
+	"tags": ["privacy", "sample", "gdpr"],
+	"metadata": {
+		"scope": "All data processing activities",
+		"jurisdiction": "EU/EEA",
+		"last_updated": "2025-10-26T04:55:46.337353"
+	},
+	"requirements": [
+		{
+			"id": "gdpr-data-subject-rights",
+			"framework": "gdpr",
+			"title": "Data Subject Rights Implementation",
+			"description": "Ensure all data subject rights (access, rectification, erasure, etc.) are properly implemented",
+			"severity": "critical",
+			"category": "data_subject_rights",
+			"controls": [
+				"Article 15: Right of access",
+				"Article 16: Right to rectification",
+				"Article 17: Right to erasure",
+				"Article 18: Right to restriction of processing",
+				"Article 20: Right to data portability",
+				"Article 21: Right to object",
+				"Article 22: Right to object to automated decision making"
+			],
+			"evidence_required": ["api_endpoints", "command_output"],
+			"remediation_steps": [
+				"Implement API endpoints for data subject requests",
+				"Create automated processes for data retrieval and deletion",
+				"Establish request tracking and response systems",
+				"Train staff on data subject rights procedures"
+			],
+			"tags": ["privacy", "data-rights", "gdpr"],
+			"metadata": {
+				"api_endpoints": [
+					"/api/data-subject/access",
+					"/api/data-subject/delete"
+				],
+				"commands": ["check_data_subject_api", "verify_rights_implementation"]
+			}
+		},
+		{
+			"id": "gdpr-data-protection-officer",
+			"framework": "gdpr",
+			"title": "Data Protection Officer Appointment",
+			"description": "Appoint a qualified Data Protection Officer and ensure proper oversight",
+			"severity": "high",
+			"category": "data_protection_officer",
+			"controls": [
+				"Article 37: Designation of the data protection officer",
+				"Article 38: Position of the data protection officer",
+				"Article 39: Tasks of the data protection officer"
+			],
+			"evidence_required": ["configuration_files", "documentation"],
+			"remediation_steps": [
+				"Appoint qualified DPO with necessary expertise",
+				"Provide DPO with necessary resources and independence",
+				"Document DPO responsibilities and authority",
+				"Ensure DPO has access to all necessary information"
+			],
+			"tags": ["governance", "dpo", "gdpr"],
+			"metadata": {
+				"config_files": ["dpo_config.json", "privacy_policy.md"],
+				"required_expertise": [
+					"data protection law",
+					"IT security",
+					"privacy practices"
+				]
+			}
+		},
+		{
+			"id": "gdpr-privacy-by-design",
+			"framework": "gdpr",
+			"title": "Privacy by Design Implementation",
+			"description": "Implement privacy by design principles in all data processing activities",
+			"severity": "high",
+			"category": "privacy_by_design",
+			"controls": [
+				"Article 25: Data protection by design and by default",
+				"Recital 78: Privacy by design requirements"
+			],
+			"evidence_required": ["code_review", "architecture_docs"],
+			"remediation_steps": [
+				"Conduct privacy impact assessments for new projects",
+				"Implement privacy controls in system design",
+				"Regular review of privacy measures",
+				"Document privacy design decisions"
+			],
+			"tags": ["privacy-by-design", "architecture", "gdpr"],
+			"metadata": {
+				"assessment_required": true,
+				"review_frequency": "quarterly"
+			}
+		}
+	]
+}

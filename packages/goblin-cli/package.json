@@ -1,0 +1,22 @@
+{
+	"name": "@goblinos/goblin-cli",
+	"version": "0.1.0",
+	"type": "module",
+	"bin": {
+		"goblin": "./dist/cli.js"
+	},
+	"scripts": {
+		"build": "tsc",
+		"dev": "tsc --watch"
+	},
+	"dependencies": {
+		"@goblinos/goblin-runtime": "workspace:*",
+		"commander": "^11.1.0",
+		"chalk": "^5.3.0",
+		"ora": "^8.0.1"
+	},
+	"devDependencies": {
+		"@types/node": "^20.10.6",
+		"typescript": "^5.3.3"
+	}
+}

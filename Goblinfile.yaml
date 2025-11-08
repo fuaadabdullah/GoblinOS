@@ -1,0 +1,30 @@
+# Toggle goblins and tweak settings here.
+plugins:
+  - name: workspace-health
+    enabled: true
+    with:
+      smokeUrl: http://127.0.0.1:3000
+  # Verify Next.js OG/Twitter/icon endpoints render (use dev server on :3000)
+  - name: workspace-health
+    enabled: true
+    with:
+      smokeUrl: http://127.0.0.1:3000/opengraph-image
+  - name: workspace-health
+    enabled: true
+    with:
+      smokeUrl: http://127.0.0.1:3000/twitter-image
+  - name: workspace-health
+    enabled: true
+    with:
+      smokeUrl: http://127.0.0.1:3000/icon
+  - name: workspace-health
+    enabled: true
+    with:
+      smokeUrl: http://127.0.0.1:3000/apple-icon
+  - name: repo-bootstrap
+    enabled: true
+    with:
+      ensurePnpm: true
+      requiredNode: 20
+  - name: quillwarden
+    enabled: false

@@ -1,0 +1,39 @@
+{
+	"name": "@goblinos/testing",
+	"version": "0.1.0",
+	"description": "Testcontainers fixtures for Overmind integration testing",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": "./dist/index.js",
+		"./node": "./dist/node/index.js",
+		"./python": "./dist/python/index.js"
+	},
+	"scripts": {
+		"build": "tsc -b",
+		"clean": "rm -rf dist",
+		"test": "vitest run",
+		"test:watch": "vitest"
+	},
+	"dependencies": {
+		"testcontainers": "^10.13.2"
+	},
+	"devDependencies": {
+		"@types/node": "^22.5.0",
+		"typescript": "^5.6.2",
+		"vitest": "^2.1.5",
+		"pg": "^8.13.0",
+		"redis": "^4.7.0"
+	},
+	"keywords": [
+		"testcontainers",
+		"integration-testing",
+		"postgres",
+		"redis",
+		"nats",
+		"overmind"
+	],
+	"author": "GoblinOS",
+	"license": "MIT"
+}

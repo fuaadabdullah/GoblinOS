@@ -1,0 +1,64 @@
+[project]
+name = "forge-smithy"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+  "typer[all]>=0.12",
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "pydantic>=2",
+  "pydantic-settings>=2",
+  "rich>=13",
+  "ruff>=0.6",
+  "pyyaml>=6.0",
+  "pytest>=8.4.2",
+  "pytest-asyncio>=0.23",
+]
+
+[project.optional-dependencies]
+# agent = [
+#   "crewai>=0.1.0",
+#   "langgraph>=0.0.40",
+#   "langchain>=0.1.0",
+# ]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.23",
+  "mypy>=1.11",
+  "nox>=2024.4",
+]
+
+[project.scripts]
+smithy = "smithy.cli:app"
+
+[tool.uv]
+package = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["smithy*"]
+exclude = ["sample_policies", "compliance_reports"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[dependency-groups]
+dev = [
+    "cosmic-ray>=8.4.3",
+    "pytest>=8.4.2",
+]

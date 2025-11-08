@@ -1,0 +1,11 @@
+typer[all]>=0.12
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2
+pydantic-settings>=2
+rich>=13
+ruff>=0.6
+pytest>=8
+mypy>=1.11
+nox>=2024.4
+cosmic-ray>=8.4.3

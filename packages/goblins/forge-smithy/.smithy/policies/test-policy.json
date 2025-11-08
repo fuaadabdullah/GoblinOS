@@ -1,0 +1,9 @@
+{
+	"name": "test-policy",
+	"description": "Test policy",
+	"rules": {
+		"blocked_licenses": ["GPL"]
+	},
+	"enabled": true,
+	"severity": "warning"
+}

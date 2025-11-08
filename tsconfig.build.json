@@ -1,0 +1,19 @@
+{
+	"files": ["types/shims.d.ts"],
+	"references": [
+		{ "path": "packages/cli" },
+		{ "path": "packages/goblins/brains" },
+		{ "path": "packages/goblins/registry" },
+		{ "path": "packages/goblins/forge-master" },
+		{ "path": "packages/goblins/crafters-guild" },
+		{ "path": "packages/goblins/huntress-guild" },
+		{ "path": "packages/goblins/keepers-guild" },
+		{ "path": "packages/goblins/mages-guild" },
+		{ "path": "packages/goblins/quillwarden" },
+		{ "path": "packages/goblins/repo-bootstrap" },
+		{ "path": "packages/goblins/workspace-health" },
+		{ "path": "packages/goblins/shared" },
+		{ "path": "packages/goblins/testing" },
+		{ "path": "packages/goblins/overmind" }
+	]
+}

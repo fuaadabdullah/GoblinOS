@@ -1,0 +1,38 @@
+[package]
+name = "app"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+license = ""
+repository = ""
+edition = "2021"
+rust-version = "1.77.2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+# Use the published 2.x tauri-build that matches the workspace's tauri 2.9.x
+tauri-build = { version = "2.5.1", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+# Enable system tray feature for Tauri so the app can create a system tray
+tauri = { version = "2.9.2", features = ["tray-icon"] }
+tauri-plugin-log = "2"
+tray-icon = "0.21.2"
+once_cell = "1.20.0"
+dirs = "4"
+
+[features]
+# Enable tauri features via crate features so code can be conditionally compiled.
+# Usage: `cargo build --features global-shortcut` to enable registration.
+default = ["tray"]
+tray = ["tauri/tray-icon"]
+global-shortcut = []
+notification = []

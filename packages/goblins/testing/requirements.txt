@@ -1,0 +1,13 @@
+"""Python requirements for @goblinos/testing package."""
+
+# Core testcontainers
+testcontainers>=4.8.0
+
+# Database clients
+asyncpg>=0.29.0
+redis[hiredis]>=5.0.0
+nats-py>=2.8.0
+
+# Testing frameworks (optional, for examples)
+pytest>=8.3.0
+pytest-asyncio>=0.24.0

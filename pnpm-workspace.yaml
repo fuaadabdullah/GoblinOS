@@ -1,0 +1,5 @@
+packages:
+  - "packages/*"
+  - "packages/goblins/*"
+  - "packages/goblin-runtime"
+  - "packages/goblin-cli"

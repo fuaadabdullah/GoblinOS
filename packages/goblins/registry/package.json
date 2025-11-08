@@ -1,0 +1,21 @@
+{
+	"name": "@goblinos/registry",
+	"version": "0.1.0",
+	"type": "module",
+	"description": "Canonical guild registry for GoblinOS (guilds, goblins, LiteBrains, tool mappings)",
+	"main": "dist/index.js",
+	"scripts": {
+		"build": "tsc",
+		"check": "tsc --noEmit",
+		"telemetry:validate": "pnpm run build && node dist/scripts/telemetry-validate.js"
+	},
+	"dependencies": {
+		"js-yaml": "^4.1.0",
+		"zod": "^3.23.8"
+	},
+	"devDependencies": {
+		"@types/js-yaml": "^4.0.9",
+		"@types/node": "^22.10.0",
+		"typescript": "^5.6.0"
+	}
+}

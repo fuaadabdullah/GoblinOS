@@ -1,0 +1,30 @@
+{
+	"name": "@goblinos/overmind-bridge",
+	"version": "0.1.0",
+	"description": "HTTP bridge for Overmind TypeScript service",
+	"type": "module",
+	"main": "./dist/index.js",
+	"scripts": {
+		"dev": "tsx watch src/index.ts",
+		"start": "node dist/index.js",
+		"build": "tsc",
+		"clean": "rm -rf dist"
+	},
+	"dependencies": {
+		"@goblinos/overmind": "workspace:*",
+		"@overmind/observability": "workspace:*",
+		"better-sqlite3": "^9.6.0",
+		"express": "^4.19.2",
+		"cors": "^2.8.5",
+		"dotenv": "^16.4.5",
+		"pino": "^9.5.0",
+		"pino-http": "^10.3.0"
+	},
+	"devDependencies": {
+		"@types/express": "^4.17.21",
+		"@types/cors": "^2.8.17",
+		"@types/node": "^20.11.30",
+		"tsx": "^4.19.1",
+		"typescript": "^5.6.2"
+	}
+}

@@ -1,0 +1,118 @@
+{
+	"id": "hipaa-sample-policy-v1.0",
+	"name": "HIPAA Compliance Policy - Sample Implementation",
+	"description": "Sample HIPAA compliance policy demonstrating health information protection",
+	"framework": "hipaa",
+	"version": "1.0",
+	"effective_date": "2025-10-26T04:55:46.337389",
+	"review_date": "2026-10-26T04:55:46.337390",
+	"owner": "Compliance Team",
+	"tags": ["healthcare", "hipaa", "sample"],
+	"metadata": {
+		"covered_entity_type": "Healthcare Provider",
+		"scope": "Electronic Protected Health Information (ePHI)",
+		"last_updated": "2025-10-26T04:55:46.337392"
+	},
+	"requirements": [
+		{
+			"id": "hipaa-phi-protection",
+			"framework": "hipaa",
+			"title": "Protected Health Information (PHI) Protection",
+			"description": "Implement safeguards to protect PHI from unauthorized access, use, or disclosure",
+			"severity": "critical",
+			"category": "phi_protection",
+			"controls": [
+				"164.312(a)(1): Access Control - Implement technical policies and procedures for electronic information systems",
+				"164.312(a)(2)(i): Access Control - Unique user identification",
+				"164.312(a)(2)(ii): Access Control - Emergency access procedure",
+				"164.312(a)(2)(iii): Access Control - Automatic logoff",
+				"164.312(a)(2)(iv): Access Control - Encryption and decryption"
+			],
+			"evidence_required": [
+				"configuration_files",
+				"access_logs",
+				"encryption_config"
+			],
+			"remediation_steps": [
+				"Implement role-based access controls",
+				"Deploy encryption for PHI at rest and in transit",
+				"Establish audit logging for PHI access",
+				"Conduct regular access reviews",
+				"Implement breach notification procedures"
+			],
+			"tags": ["privacy", "hipaa", "phi"],
+			"metadata": {
+				"phi_data_types": [
+					"medical_records",
+					"billing_info",
+					"patient_demographics"
+				],
+				"encryption_required": true,
+				"access_logging": true,
+				"retention_years": 6
+			}
+		},
+		{
+			"id": "hipaa-risk-analysis",
+			"framework": "hipaa",
+			"title": "Security Risk Analysis",
+			"description": "Conduct regular security risk analyses of ePHI systems",
+			"severity": "high",
+			"category": "risk_analysis",
+			"controls": [
+				"164.308(a)(1)(ii)(A): Risk Analysis - Conduct an accurate and thorough assessment",
+				"164.308(a)(1)(ii)(B): Risk Analysis - Document security measures",
+				"164.308(a)(1)(ii)(C): Risk Analysis - Implement security measures"
+			],
+			"evidence_required": ["risk_assessment_reports", "vulnerability_scans"],
+			"remediation_steps": [
+				"Conduct annual risk assessments",
+				"Document identified risks and mitigation plans",
+				"Implement security controls based on risk assessment",
+				"Review and update risk assessments regularly",
+				"Maintain risk assessment documentation"
+			],
+			"tags": ["risk-analysis", "hipaa", "assessment"],
+			"metadata": {
+				"assessment_frequency": "annual",
+				"required_elements": [
+					"threat_identification",
+					"vulnerability_scanning",
+					"impact_analysis"
+				],
+				"documentation_required": true
+			}
+		},
+		{
+			"id": "hipaa-business-associate-agreements",
+			"framework": "hipaa",
+			"title": "Business Associate Agreements",
+			"description": "Establish and maintain business associate agreements with vendors",
+			"severity": "high",
+			"category": "business_associates",
+			"controls": [
+				"164.314(a): Business Associate Contracts - Written contracts required",
+				"164.314(b): Business Associate Contracts - Contract requirements",
+				"164.504(e): Business Associate Contracts - Business associate obligations"
+			],
+			"evidence_required": ["contract_files", "vendor_list"],
+			"remediation_steps": [
+				"Identify all business associates",
+				"Draft and negotiate BAA templates",
+				"Review existing contracts for BAA requirements",
+				"Monitor business associate compliance",
+				"Maintain BAA documentation and renewal schedules"
+			],
+			"tags": ["contracts", "business-associates", "hipaa"],
+			"metadata": {
+				"contract_template": "baa_template.docx",
+				"review_frequency": "annual",
+				"required_clauses": [
+					"permitted_uses",
+					"security_measures",
+					"breach_notification"
+				]
+			}
+		}
+	]
+}

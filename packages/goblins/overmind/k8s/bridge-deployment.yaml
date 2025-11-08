@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: overmind-bridge
+  labels:
+    app: overmind
+    component: bridge
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: overmind
+      component: bridge
+  template:
+    metadata:
+      labels:
+        app: overmind
+        component: bridge
+    spec:
+      containers:
+      - name: bridge
+        image: overmind-bridge:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3030
+          name: http
+        env:
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: overmind-secrets
+              key: gemini_api_key
+        - name: DEEPSEEK_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: overmind-secrets
+              key: deepseek_api_key
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: overmind-secrets
+              key: openai_api_key
+              optional: true
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: overmind-config
+              key: otel_endpoint
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: overmind-config
+              key: log_level
+        # Resource limits explanation:
+        # - Bridge handles TypeScript Overmind + Express server
+        # - Higher memory than API due to LLM client libraries
+        # - CPU request 2x API due to routing calculations
+        # - Monitor with `kubectl top pod -l component=bridge`
+        # - Adjust based on actual traffic patterns
+        resources:
+          requests:
+            memory: "512Mi"  # Node.js + TypeScript + LLM clients
+            cpu: "200m"      # 0.2 CPU cores (routing + orchestration)
+          limits:
+            memory: "1Gi"    # 2x request (LLM responses can be large)
+            cpu: "1000m"     # 1 full CPU core (parallel LLM calls)
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3030
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3030
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: overmind-bridge
+  labels:
+    app: overmind
+    component: bridge
+spec:
+  type: ClusterIP
+  selector:
+    app: overmind
+    component: bridge
+  ports:
+  - port: 3030
+    targetPort: 3030
+    protocol: TCP
+    name: http

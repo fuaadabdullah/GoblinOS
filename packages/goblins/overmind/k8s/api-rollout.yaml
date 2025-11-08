@@ -1,0 +1,169 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: overmind-api
+  labels:
+    app: overmind
+    component: api
+spec:
+  replicas: 2
+  strategy:
+    canary:
+      # Canary strategy with traffic management
+      stableService: overmind-api-stable
+      canaryService: overmind-api-canary
+      trafficRouting:
+        istio:
+          virtualService:
+            name: overmind-api
+            routes:
+            - primary  # Route name in VirtualService
+      steps:
+      - setWeight: 5
+      - pause: {duration: 10}  # 10 seconds
+      - setWeight: 20
+      - pause: {duration: 10}
+      - setWeight: 40
+      - pause: {duration: 10}
+      - setWeight: 60
+      - pause: {duration: 10}
+      - setWeight: 80
+      - pause: {duration: 10}
+      # Analysis step - check SLOs before full rollout
+      - analysis:
+          templates:
+          - templateName: success-rate
+          args:
+          - name: service-name
+            value: overmind-api-canary
+          - name: baseline-service-name
+            value: overmind-api-stable
+      - setWeight: 100
+      - pause: {duration: 10}
+  selector:
+    matchLabels:
+      app: overmind
+      component: api
+      rollouts-pod-template-hash: ""
+  template:
+    metadata:
+      labels:
+        app: overmind
+        component: api
+    spec:
+      containers:
+      - name: api
+        image: overmind-api:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8001
+          name: http
+        env:
+        - name: NODE_BRIDGE_URL
+          value: "http://overmind-bridge:3030"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: overmind-config
+              key: otel_endpoint
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: overmind-config
+              key: log_level
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: overmind-api-stable
+  labels:
+    app: overmind
+    component: api
+spec:
+  type: ClusterIP
+  selector:
+    app: overmind
+    component: api
+    rollouts-pod-template-hash: ""  # Selects stable pods
+  ports:
+  - port: 8001
+    targetPort: 8001
+    protocol: TCP
+    name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: overmind-api-canary
+  labels:
+    app: overmind
+    component: api
+spec:
+  type: ClusterIP
+  selector:
+    app: overmind
+    component: api
+    rollouts-pod-template-hash: ""  # Will be updated by Rollout
+  ports:
+  - port: 8001
+    targetPort: 8001
+    protocol: TCP
+    name: http
+---
+# Analysis Template for SLO-based promotion
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: success-rate
+spec:
+  metrics:
+  - name: success-rate
+    interval: 5m
+    successCondition: result[0] >= 0.95
+    provider:
+      prometheus:
+        address: http://prometheus-server
+        query: |
+          sum(irate(
+            istio_requests_total{reporter="source",destination_service_name=~"{{args.service-name}}",response_code!~"5.*"}[5m]
+          )) /
+          sum(irate(
+            istio_requests_total{reporter="source",destination_service_name=~"{{args.service-name}}"}[5m]
+          ))
+  - name: error-budget
+    interval: 5m
+    successCondition: result[0] <= 0.05  # Max 5% error rate
+    provider:
+      prometheus:
+        address: http://prometheus-server
+        query: |
+          1 - (
+            sum(irate(
+              istio_requests_total{reporter="source",destination_service_name=~"{{args.service-name}}",response_code!~"5.*"}[5m]
+            )) /
+            sum(irate(
+              istio_requests_total{reporter="source",destination_service_name=~"{{args.service-name}}"}[5m]
+            ))
+          )
+  args:
+  - name: service-name
+  - name: baseline-service-name

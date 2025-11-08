@@ -1,0 +1,10 @@
+{
+	"name": "language-python",
+	"version": "0.1.0",
+	"description": "Adds Python language automation helpers",
+	"author": "Smithy Core",
+	"license": "MIT",
+	"categories": ["language"],
+	"capabilities": ["config:read", "extensions:register"],
+	"entry_point": "smithy.plugins.examples.language_python.plugin:PythonLanguagePlugin"
+}

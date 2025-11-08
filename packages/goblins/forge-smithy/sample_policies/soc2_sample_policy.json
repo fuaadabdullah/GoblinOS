@@ -1,0 +1,104 @@
+{
+	"id": "soc2-sample-policy-v1.0",
+	"name": "SOC2 Compliance Policy - Sample Implementation",
+	"description": "Sample SOC2 compliance policy demonstrating trust services criteria",
+	"framework": "soc2",
+	"version": "1.0",
+	"effective_date": "2025-10-26T04:55:46.337372",
+	"review_date": "2026-10-26T04:55:46.337372",
+	"owner": "Compliance Team",
+	"tags": ["soc2", "trust-services", "sample"],
+	"metadata": {
+		"trust_services_criteria": [
+			"Security",
+			"Availability",
+			"Processing Integrity"
+		],
+		"scope": "Information systems and processes",
+		"last_updated": "2025-10-26T04:55:46.337375"
+	},
+	"requirements": [
+		{
+			"id": "soc2-security-controls",
+			"framework": "soc2",
+			"title": "Security Controls Implementation",
+			"description": "Implement and maintain comprehensive security controls",
+			"severity": "critical",
+			"category": "security_controls",
+			"controls": [
+				"CC1.1: COSO Principle 1 - Demonstrates commitment to integrity and ethical values",
+				"CC2.2: COSO Principle 5 - Demonstrates commitment to competence",
+				"CC3.1: COSO Principle 9 - Identifies and analyzes risk",
+				"CC4.1: COSO Principle 13 - Defines objectives and strategies",
+				"CC5.1: COSO Principle 17 - Identifies and manages financial and operating information"
+			],
+			"evidence_required": ["configuration_files", "security_scans", "logs"],
+			"remediation_steps": [
+				"Implement access controls and authentication",
+				"Deploy encryption for data at rest and in transit",
+				"Establish security monitoring and alerting",
+				"Conduct regular security assessments",
+				"Maintain security incident response procedures"
+			],
+			"tags": ["soc2", "security", "controls"],
+			"metadata": {
+				"config_paths": ["security_config.json", "access_control.yaml"],
+				"scan_results": "security_scan_results.json",
+				"log_files": ["security.log", "access.log"]
+			}
+		},
+		{
+			"id": "soc2-change-management",
+			"framework": "soc2",
+			"title": "Change Management Process",
+			"description": "Establish formal change management procedures for system changes",
+			"severity": "high",
+			"category": "change_management",
+			"controls": [
+				"CC8.1: COSO Principle 25 - Selects and develops control activities",
+				"CC9.1: COSO Principle 29 - Evaluates and communicates deficiencies"
+			],
+			"evidence_required": ["change_logs", "approval_records"],
+			"remediation_steps": [
+				"Document change management procedures",
+				"Implement change approval workflows",
+				"Conduct impact assessments for changes",
+				"Maintain change history and rollback procedures",
+				"Test changes in staging environment before production"
+			],
+			"tags": ["soc2", "change-management", "operations"],
+			"metadata": {
+				"change_log_path": "changes.log",
+				"approval_required": true,
+				"testing_required": true
+			}
+		},
+		{
+			"id": "soc2-monitoring-alerting",
+			"framework": "soc2",
+			"title": "Monitoring and Alerting Systems",
+			"description": "Implement comprehensive monitoring and alerting for system health and security",
+			"severity": "high",
+			"category": "monitoring",
+			"controls": [
+				"CC7.1: COSO Principle 21 - Considers all relevant information",
+				"CC7.2: COSO Principle 22 - Communicates internally",
+				"CC7.3: COSO Principle 23 - Communicates externally"
+			],
+			"evidence_required": ["monitoring_config", "alert_logs"],
+			"remediation_steps": [
+				"Deploy monitoring tools and dashboards",
+				"Configure alerting for critical events",
+				"Establish monitoring baselines",
+				"Implement log aggregation and analysis",
+				"Create incident response procedures"
+			],
+			"tags": ["soc2", "monitoring", "alerting"],
+			"metadata": {
+				"monitoring_tools": ["prometheus", "grafana", "elk"],
+				"alert_channels": ["email", "slack", "pagerduty"],
+				"retention_period_days": 90
+			}
+		}
+	]
+}

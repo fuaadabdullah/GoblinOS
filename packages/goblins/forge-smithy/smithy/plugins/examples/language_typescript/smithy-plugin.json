@@ -1,0 +1,10 @@
+{
+	"name": "language-typescript",
+	"version": "0.1.0",
+	"description": "TypeScript/Node language helpers",
+	"author": "Smithy Core",
+	"license": "MIT",
+	"categories": ["language"],
+	"capabilities": ["config:read", "extensions:register"],
+	"entry_point": "smithy.plugins.examples.language_typescript.plugin:TypeScriptLanguagePlugin"
+}

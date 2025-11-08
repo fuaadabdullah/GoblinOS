@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: overmind-api
+  labels:
+    app: overmind
+    component: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: overmind
+      component: api
+  template:
+    metadata:
+      labels:
+        app: overmind
+        component: api
+    spec:
+      containers:
+      - name: api
+        image: overmind-api:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8001
+          name: http
+        env:
+        - name: NODE_BRIDGE_URL
+          value: "http://overmind-bridge:3030"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: overmind-config
+              key: otel_endpoint
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: overmind-config
+              key: log_level
+        # Resource limits explanation:
+        # - Requests: Guaranteed resources for scheduling
+        # - Limits: Maximum resources before throttling/OOMKill
+        # - Start conservative, monitor actual usage, then adjust
+        # - Use `kubectl top pod` to see real resource consumption
+        # - Check Prometheus metrics for p95/p99 usage patterns
+        resources:
+          requests:
+            memory: "256Mi"  # Baseline: Python FastAPI + dependencies
+            cpu: "100m"      # 0.1 CPU cores (10% of 1 core)
+          limits:
+            memory: "512Mi"  # 2x request (allows spikes, prevents runaway)
+            cpu: "500m"      # 0.5 CPU cores (max burst capacity)
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: overmind-api
+  labels:
+    app: overmind
+    component: api
+spec:
+  type: ClusterIP
+  selector:
+    app: overmind
+    component: api
+  ports:
+  - port: 8001
+    targetPort: 8001
+    protocol: TCP
+    name: http

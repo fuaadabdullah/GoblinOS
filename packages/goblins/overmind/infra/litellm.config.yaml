@@ -1,0 +1,177 @@
+# LiteLLM Proxy Configuration
+# Unified gateway for OpenAI, DeepSeek, Gemini, and Ollama
+# Start with: litellm --config infra/litellm.config.yaml --port 4000
+
+model_list:
+  # === Ollama Models (Local) ===
+  - model_name: ollama/llama3.1
+    litellm_params:
+      model: ollama/llama3.1
+      api_base: http://localhost:11434
+    model_info:
+      mode: chat
+      supports_function_calling: true
+      supports_vision: false
+      max_tokens: 128000
+
+  - model_name: ollama/qwen2.5-coder
+    litellm_params:
+      model: ollama/qwen2.5-coder:7b
+      api_base: http://localhost:11434
+    model_info:
+      mode: chat
+      supports_function_calling: true
+      supports_vision: false
+      max_tokens: 32768
+
+  - model_name: ollama/nomic-embed-text
+    litellm_params:
+      model: ollama/nomic-embed-text
+      api_base: http://localhost:11434
+    model_info:
+      mode: embedding
+      max_input_tokens: 8192
+      output_vector_size: 768
+
+  # === OpenAI Models (Cloud) ===
+  - model_name: openai/gpt-4o
+    litellm_params:
+      model: gpt-4o
+      api_key: ${OPENAI_API_KEY}
+    model_info:
+      mode: chat
+      supports_function_calling: true
+      supports_vision: true
+      max_tokens: 128000
+
+  - model_name: openai/gpt-4o-mini
+    litellm_params:
+      model: gpt-4o-mini
+      api_key: ${OPENAI_API_KEY}
+    model_info:
+      mode: chat
+      supports_function_calling: true
+      supports_vision: true
+      max_tokens: 128000
+
+  - model_name: openai/text-embedding-3-small
+    litellm_params:
+      model: text-embedding-3-small
+      api_key: ${OPENAI_API_KEY}
+    model_info:
+      mode: embedding
+      max_input_tokens: 8191
+      output_vector_size: 1536
+
+  # === DeepSeek Models (Cloud) ===
+  - model_name: deepseek/deepseek-chat
+    litellm_params:
+      model: deepseek-chat
+      api_base: https://api.deepseek.com
+      api_key: ${DEEPSEEK_API_KEY}
+    model_info:
+      mode: chat
+      supports_function_calling: true
+      supports_vision: false
+      max_tokens: 64000
+
+  - model_name: deepseek/deepseek-coder
+    litellm_params:
+      model: deepseek-coder
+      api_base: https://api.deepseek.com
+      api_key: ${DEEPSEEK_API_KEY}
+    model_info:
+      mode: chat
+      supports_function_calling: true
+      supports_vision: false
+      max_tokens: 64000
+
+  # === Google Gemini Models (Cloud) ===
+  - model_name: gemini/gemini-2.0-flash
+    litellm_params:
+      model: gemini/gemini-2.0-flash-exp
+      api_key: ${GEMINI_API_KEY}
+    model_info:
+      mode: chat
+      supports_function_calling: true
+      supports_vision: true
+      max_tokens: 1048576
+
+  - model_name: gemini/gemini-1.5-pro
+    litellm_params:
+      model: gemini/gemini-1.5-pro
+      api_key: ${GEMINI_API_KEY}
+    model_info:
+      mode: chat
+      supports_function_calling: true
+      supports_vision: true
+      max_tokens: 2097152
+
+# === General Settings ===
+general_settings:
+  # Logging
+  set_verbose: true
+  json_logs: true
+
+  # Caching (Redis optional)
+  cache: false
+  # cache_params:
+  #   type: redis
+  #   host: localhost
+  #   port: 6379
+
+  # Rate limiting (requests per minute per model)
+  litellm_settings:
+    num_retries: 3
+    request_timeout: 600
+    fallbacks:
+      - ollama/llama3.1
+      - deepseek/deepseek-chat
+      - openai/gpt-4o-mini
+
+  # Success callbacks (for observability)
+  success_callback: ["langfuse"]
+  failure_callback: ["langfuse"]
+
+  # Model aliases for easier routing
+  model_alias_map:
+    llama3: ollama/llama3.1
+    qwen: ollama/qwen2.5-coder
+    gpt4: openai/gpt-4o
+    gpt4-mini: openai/gpt-4o-mini
+    deepseek: deepseek/deepseek-chat
+    gemini: gemini/gemini-2.0-flash
+    embed-local: ollama/nomic-embed-text
+    embed-cloud: openai/text-embedding-3-small
+
+# === Router Settings ===
+router_settings:
+  routing_strategy: usage-based-routing
+  allowed_fails: 3
+  cooldown_time: 60  # seconds
+
+  # Model routing preferences
+  model_group_alias:
+    fast:
+      - deepseek/deepseek-chat
+      - openai/gpt-4o-mini
+      - ollama/llama3.1
+
+    creative:
+      - gemini/gemini-2.0-flash
+      - openai/gpt-4o
+      - ollama/llama3.1
+
+    code:
+      - ollama/qwen2.5-coder
+      - deepseek/deepseek-coder
+      - openai/gpt-4o
+
+    local:
+      - ollama/llama3.1
+      - ollama/qwen2.5-coder
+
+    cheap:
+      - ollama/llama3.1
+      - deepseek/deepseek-chat
+      - openai/gpt-4o-mini

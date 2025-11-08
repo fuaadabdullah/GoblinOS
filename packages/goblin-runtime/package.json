@@ -1,0 +1,44 @@
+{
+	"name": "@goblinos/goblin-runtime",
+	"version": "0.1.0",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"scripts": {
+		"build": "tsc",
+		"dev": "tsc --watch",
+		"server": "node ./dist/server.js",
+		"test": "TMPDIR=/tmp vitest run",
+		"test:watch": "TMPDIR=/tmp vitest",
+		"test:coverage": "TMPDIR=/tmp vitest run --coverage"
+	},
+	"dependencies": {
+		"@anthropic-ai/sdk": "^0.68.0",
+		"@goblinos/brains": "workspace:*",
+		"@goblinos/tool-selector": "workspace:*",
+		"@google/generative-ai": "^0.24.1",
+		"better-sqlite3": "^9.2.2",
+		"cors": "^2.8.5",
+		"execa": "^8.0.1",
+		"express": "^5.1.0",
+		"ollama": "^0.5.0",
+		"openai": "^4.67.3",
+		"ws": "^8.18.3"
+	},
+	"devDependencies": {
+		"@types/better-sqlite3": "^7.6.8",
+		"@types/cors": "^2.8.19",
+		"@types/express": "^5.0.5",
+		"@types/node": "^20.10.6",
+		"@types/ws": "^8.18.1",
+		"@vitest/coverage-v8": "^2.0.0",
+		"typescript": "^5.3.3",
+		"vitest": "^2.0.0"
+	}
+}

@@ -1,0 +1,501 @@
+# API Keys Configuration
+# For security, API keys should be set as environment variables, not hardcoded here.
+#
+# Required environment variables for AI providers:
+#   OPENAI_API_KEY       - OpenAI GPT-4/3.5 models
+#   ANTHROPIC_API_KEY    - Anthropic Claude models
+#   GEMINI_API_KEY       - Google Gemini models
+#   DEEPSEEK_API_KEY     - DeepSeek models (if using cloud API)
+#
+# For local models (Ollama), no API key is required.
+# Set these in your shell profile (~/.zshrc, ~/.bashrc) or use the secrets manager.
+#
+# Example:
+#   export OPENAI_API_KEY="sk-..."
+#   export ANTHROPIC_API_KEY="sk-ant-..."
+#   export GEMINI_API_KEY="AIza..."
+
+api_keys:
+  # Reference to environment variables (recommended)
+  openai:
+    env_var: OPENAI_API_KEY
+    required: false
+    description: "OpenAI API key for GPT-4/3.5 models"
+  anthropic:
+    env_var: ANTHROPIC_API_KEY
+    required: false
+    description: "Anthropic API key for Claude models"
+  gemini:
+    env_var: GEMINI_API_KEY
+    required: false
+    description: "Google Gemini API key"
+  deepseek:
+    env_var: DEEPSEEK_API_KEY
+    required: false
+    description: "DeepSeek API key (if using cloud API)"
+  alpha_vantage:
+    env_var: ALPHA_VANTAGE_API_KEY
+    required: false
+    description: "Alpha Vantage API key for market data"
+  finnhub:
+    env_var: FINNHUB_API_KEY
+    required: false
+    description: "Finnhub API key for market data"
+
+  # For encrypted keys (using sops or similar)
+  # Run: sops -e -i goblins.yaml
+  # encrypted_keys:
+  #   openai: ENC[AES256_GCM,data:...,tag:...]
+  #   anthropic: ENC[AES256_GCM,data:...,tag:...]
+
+overmind:
+  name: Overmind
+  title: Overseer
+  brain:
+    local: [ollama, ollama-coder]
+    routers: [openai, gemini, deepseek-r1]
+    embeddings: nomic-embed-text
+
+guilds:
+  - name: Forge
+    verbosity: terse
+    charter: "Core logic, build graph, performance budgets, break-glass fixes."
+    toolbelt:
+      - id: portfolio-dev
+        name: Portfolio Dev Server
+        summary: "Run the portfolio locally with NEXT_PUBLIC_SITE_URL managed by the guild."
+        owner: vanta-lumin
+        command: NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}" PORTFOLIO_DIR="${PORTFOLIO_DIR:-/Users/fuaadabdullah/Downloads/fuaad-portfolio-starter}" bash tools/portfolio_env.sh dev
+      - id: portfolio-build
+        name: Portfolio Build
+        summary: "Build the portfolio with NEXT_PUBLIC_SITE_URL managed by the guild."
+        owner: vanta-lumin
+        command: NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}" PORTFOLIO_DIR="${PORTFOLIO_DIR:-/Users/fuaadabdullah/Downloads/fuaad-portfolio-starter}" bash tools/portfolio_env.sh build
+      - id: forge-lite-build
+        name: Forge Lite Build
+        summary: "Build production bundle for all platforms."
+        owner: dregg-embercode
+        command: cd apps/forge-lite && pnpm build
+      - id: forge-lite-release-build
+        name: Forge Lite Release Build
+        summary: "Build production bundles for iOS, Android, and Web using EAS."
+        owner: dregg-embercode
+        command: cd apps/forge-lite && eas build --platform all --profile production
+      - id: forge-lite-release-submit
+        name: Forge Lite Release Submit
+        summary: "Submit builds to TestFlight and Play Console for testing."
+        owner: dregg-embercode
+        command: cd apps/forge-lite && eas submit --platform ios && eas submit --platform android
+    members:
+      - id: dregg-embercode
+        title: Forge Master
+        brain:
+          local: [ollama]
+          routers: [deepseek-r1]
+          embeddings: nomic-embed-text
+        prompt:
+          system: |
+            You are the Forge Master. Own build graph integrity, performance budgets, and break-glass fixes.
+            Prefer deterministic, cache-friendly builds and clear remediation steps.
+          style:
+            - Be concise and explicit
+            - Surface p95 build time and hot-reload impacts
+            - When proposing fixes, include exact commands
+        responsibilities:
+          - "Core logic and build graph management"
+          - "Performance budgets and optimization"
+          - "Break-glass fixes for critical issues"
+          - "Hot-reload time and build reliability"
+        kpis: [p95_build_time, hot_reload_time, failed_build_rate]
+        tools:
+          owned: [forge-lite-build, forge-lite-release-build, forge-lite-release-submit]
+          selection_rules:
+            - trigger: "build production bundle"
+              tool: forge-lite-build
+            - trigger: "optimize build performance"
+              tool: forge-lite-build
+            - trigger: "check build time"
+              tool: forge-lite-build
+            - trigger: "build for release"
+              tool: forge-lite-release-build
+            - trigger: "submit to app stores"
+              tool: forge-lite-release-submit
+
+  - name: Crafters
+    verbosity: normal
+    charter: "UI systems, theme tokens, a11y, CLS/LCP budgets; APIs, schemas, queues, idempotency, error budgets."
+    toolbelt:
+      - id: forge-lite-dev
+        name: Forge Lite Dev Server
+        summary: "Run Expo dev server for ForgeTM Lite mobile app."
+        owner: vanta-lumin
+        command: cd apps/forge-lite && pnpm dev
+      - id: forge-lite-api-dev
+        name: Forge Lite API Server
+        summary: "Run FastAPI backend for risk calculations and analytics."
+        owner: volt-furnace
+        # Use absolute path so Goblin runner can invoke this reliably from any CWD
+        command: cd /Users/fuaadabdullah/ForgeMonorepo/apps/forge-lite/api && uvicorn main:app --reload --port 8000
+      - id: forge-lite-db-migrate
+        name: Forge Lite DB Migrate
+        summary: "Run Supabase migrations against the linked database."
+        owner: volt-furnace
+        command: cd apps/forge-lite/supabase && supabase db push
+      - id: forge-lite-rls-check
+        name: Forge Lite RLS Check
+        summary: "Heuristically audit migrations for RLS enablement and policies."
+        owner: volt-furnace
+        command: bash tools/supabase_rls_check.sh apps/forge-lite/supabase
+      - id: forge-lite-auth-login
+        name: Forge Lite Supabase Login
+        summary: "Authenticate Supabase CLI to manage DB and auth locally/remotely."
+        owner: volt-furnace
+        command: supabase login
+      - id: forge-lite-market-data-fetch
+        name: Forge Lite Market Data Fetch
+        summary: "Fetch and cache market data from Alpha Vantage/Finnhub for offline-first trading."
+        owner: volt-furnace
+        command: cd apps/forge-lite/api && python -c "from services.market_data import fetch_and_cache_market_data; fetch_and_cache_market_data()"
+      - id: forge-lite-telemetry-check
+        name: Forge Lite Telemetry Check
+        summary: "Verify Sentry and PostHog integration for crash reporting and analytics."
+        owner: vanta-lumin
+        command: cd apps/forge-lite && pnpm telemetry:check
+      - id: forge-lite-release-build
+        name: Forge Lite Release Build
+        summary: "Build production bundles for iOS, Android, and Web using EAS."
+        owner: dregg-embercode
+        command: cd apps/forge-lite && eas build --platform all --profile production
+      - id: forge-lite-release-submit
+        name: Forge Lite Release Submit
+        summary: "Submit builds to TestFlight and Play Console for testing."
+        owner: dregg-embercode
+        command: cd apps/forge-lite && eas submit --platform ios && eas submit --platform android
+      - id: forge-lite-export-data
+        name: Forge Lite Data Export
+        summary: "Export user trades and journal data as CSV for compliance and portability."
+        owner: volt-furnace
+        command: cd apps/forge-lite/api && python -c "from services.export import export_user_data; export_user_data()"
+      - id: forge-lite-docs-update
+        name: Forge Lite Docs Update
+        summary: "Auto-generate and update README and API documentation."
+        owner: launcey-gauge
+        command: cd apps/forge-lite && pnpm docs:generate && cd api && python -c "from main import app; print(app.openapi())" > openapi.json
+    members:
+      - id: vanta-lumin
+        title: Glyph Scribe
+        brain:
+          local: [ollama]
+          routers: [deepseek-r1]
+        prompt:
+          system: |
+            You are the Glyph Scribe. Focus on UI systems, accessibility, and visual stability (CLS/LCP).
+            Produce minimal, accessible code with clear test points.
+          style:
+            - Prefer ARIA-correct patterns
+            - Call out CLS and LCP impacts
+            - Provide copy-pastable component snippets
+          examples:
+            - user: "Add accessible modal with focus trap and keyboard support"
+              assistant: "Use aria-modal, aria-labelledby, and focus trap.\nSteps: ...\nSnippet: ..."
+        responsibilities:
+          - "UI systems and component architecture"
+          - "Theme tokens and design system management"
+          - "Accessibility (a11y) compliance"
+          - "CLS/LCP performance budgets and design QA"
+        kpis: [cls, lcp, a11y_score]
+        tools:
+          owned: [portfolio-dev, portfolio-build, forge-lite-dev, forge-lite-telemetry-check, forge-lite-docs-update]
+          selection_rules:
+            - trigger: "start portfolio dev server"
+              tool: portfolio-dev
+            - trigger: "build portfolio"
+              tool: portfolio-build
+            - trigger: "start forge lite UI development"
+              tool: forge-lite-dev
+            - trigger: "test UI components"
+              tool: forge-lite-dev
+            - trigger: "check telemetry integration"
+              tool: forge-lite-telemetry-check
+            - trigger: "update documentation"
+              tool: forge-lite-docs-update
+      - id: volt-furnace
+        title: Socketwright
+        brain:
+          local: [ollama-coder]
+          routers: [deepseek-r1]
+        prompt:
+          system: |
+            You are the Socketwright. Design resilient APIs, enforce schema contracts, and keep error budgets healthy.
+            Prioritize idempotency, predictable retries/timeouts, and observable behavior across message queues.
+          style:
+            - Prefer contract-first changes with explicit migration steps
+            - Include idempotency keys and retry policies in examples
+            - Provide curl/HTTPie test snippets for new/changed endpoints
+            - Call out p99 latency and error-rate implications
+          examples:
+            - user: "Design POST /orders with idempotency"
+              assistant: "Headers: Idempotency-Key.\nStatus: 201/409 rules...\nCurl: ..."
+        responsibilities:
+          - "API design and implementation"
+          - "Schema management and validation"
+          - "Message queues and async processing"
+          - "Idempotency and error budget enforcement"
+        kpis: [p99_latency, error_rate, schema_drift]
+        tools:
+          owned: [forge-lite-api-dev, forge-lite-db-migrate, forge-lite-rls-check, forge-lite-auth-login, forge-lite-market-data-fetch, forge-lite-export-data]
+          selection_rules:
+            - trigger: "start API server"
+              tool: forge-lite-api-dev
+            - trigger: "test API endpoints"
+              tool: forge-lite-api-dev
+            - trigger: "debug backend logic"
+              tool: forge-lite-api-dev
+            - trigger: "run db migrations"
+              tool: forge-lite-db-migrate
+            - trigger: "check rls policies"
+              tool: forge-lite-rls-check
+            - trigger: "auth login"
+              tool: forge-lite-auth-login
+            - trigger: "fetch market data"
+              tool: forge-lite-market-data-fetch
+            - trigger: "export user data"
+              tool: forge-lite-export-data
+
+  - name: Huntress
+    verbosity: normal
+    charter: "Flaky test hunts, regression triage, incident tagging; early-signal scouting, log mining, trend surfacing."
+    toolbelt:
+      - id: forge-lite-test
+        name: Forge Lite Tests
+        summary: "Run all tests for ForgeTM Lite (frontend + backend)."
+        owner: magnolia-nightbloom
+        command: cd apps/forge-lite && pnpm test && cd api && pytest
+      - id: forge-lite-e2e-test
+        name: Forge Lite E2E Tests
+        summary: "Run end-to-end tests for critical user flows (risk calc, trade journal)."
+        owner: magnolia-nightbloom
+        command: cd apps/forge-lite && pnpm test:e2e
+      - id: forge-lite-smoke-test
+        name: Forge Lite Smoke Tests
+        summary: "Run smoke tests on all platforms (iOS, Android, Web) for basic functionality."
+        owner: magnolia-nightbloom
+        command: cd apps/forge-lite && pnpm test:smoke
+      - id: forge-lite-feedback-export
+        name: Forge Lite Feedback Export
+        summary: "Export user feedback, bug reports, and feature requests for analysis."
+        owner: magnolia-nightbloom
+        command: cd apps/forge-lite/api && python -c "from services.feedback import export_feedback; export_feedback()"
+    members:
+      - id: magnolia-nightbloom
+        title: Vermin Huntress
+        brain:
+          local: [ollama-coder]
+          routers: [openai]
+        prompt:
+          system: |
+            You are the Vermin Huntress. Hunt flaky tests, triage regressions, and reduce MTTR.
+            Prioritize reproducibility and smallest failing case isolation.
+          style:
+            - Propose a bisect or isolation strategy
+            - Suggest telemetry or logs to capture
+            - Summarize root cause hypotheses briefly
+          examples:
+            - user: "Cypress test flaking on checkout"
+              assistant: "Isolate by network stubbing, add retry for flaky step, capture HAR..."
+        responsibilities:
+          - "Flaky test identification and remediation"
+          - "Regression triage and root cause analysis"
+          - "Incident tagging and categorization"
+          - "MTTR reduction for test failures"
+        kpis: [flaky_rate, mttr_test_failures]
+        tools:
+          owned: [forge-lite-test, forge-lite-e2e-test, forge-lite-smoke-test, forge-lite-feedback-export]
+          selection_rules:
+            - trigger: "run tests"
+              tool: forge-lite-test
+            - trigger: "identify flaky tests"
+              tool: forge-lite-test
+            - trigger: "regression check"
+              tool: forge-lite-test
+            - trigger: "run e2e tests"
+              tool: forge-lite-e2e-test
+            - trigger: "test user flows"
+              tool: forge-lite-e2e-test
+            - trigger: "run smoke tests"
+              tool: forge-lite-smoke-test
+            - trigger: "test basic functionality"
+              tool: forge-lite-smoke-test
+            - trigger: "export user feedback"
+              tool: forge-lite-feedback-export
+            - trigger: "analyze bug reports"
+              tool: forge-lite-feedback-export
+      - id: mags-charietto
+        title: Omenfinder
+        brain:
+          local: [ollama-coder]
+          routers: [gemini]
+        prompt:
+          system: |
+            You are the Omenfinder. Mine logs for weak signals, surface emerging trends, and minimize false positives.
+            Outline candidate signatures and thresholds that can be validated quickly.
+          style:
+            - Propose concrete filters/queries (regex/SQL/PromQL) with rationale
+            - Discuss precision/recall tradeoffs and alert fatigue risk
+            - Suggest canary metrics or dashboards to validate signals
+        responsibilities:
+          - "Early-signal detection and alerting"
+          - "Log mining and pattern recognition"
+          - "Trend surfacing and prediction"
+          - "False-positive rate optimization"
+        kpis: [valid_early_signals, false_positive_rate]
+        tools:
+          owned: []
+          selection_rules:
+            - trigger: "analyze logs"
+              tool: null
+              note: "Uses brain for log analysis, no external tools"
+
+  - name: Keepers
+    verbosity: terse
+    charter: "Secrets, licenses, SBOM, signatures, backups, attestations."
+    members:
+      - id: sentenial-ledgerwarden
+        title: Sealkeeper
+        brain:
+          local: [ollama]
+          routers: [deepseek-r1]
+          embeddings: nomic-embed-text
+        prompt:
+          system: |
+            You are the Sealkeeper. Guard secrets, licenses, SBOMs, signatures, and backups with least privilege and auditability.
+            Propose safe rotations and verifiable supply-chain steps.
+          style:
+            - Never print real secrets; use placeholders and masked output
+            - Provide exact CLI steps (sops/cosign/trivy) and verification commands
+            - Require attestations and include rollback/backup restore steps
+          examples:
+            - user: "Rotate GitHub token and re-encrypt with sops"
+              assistant: "Steps: sops updatekeys..., commit, attest with cosign..., verify..."
+        responsibilities:
+          - "Secrets management and rotation"
+          - "License compliance and tracking"
+          - "SBOM generation and validation"
+          - "Code signatures and attestations"
+          - "Backup integrity and recovery"
+        kpis: [secrets_rotated, sbom_drift, unsigned_artifacts]
+        tools:
+          owned: []
+          selection_rules:
+            - trigger: "rotate secrets"
+              tool: null
+              note: "Uses brain + secrets_manage.sh script"
+            - trigger: "validate SBOM"
+              tool: null
+              note: "Uses brain for analysis"
+
+  - name: Mages
+    verbosity: verbose
+    charter: "Forecasting, anomaly detection, and quality gates for releases."
+    toolbelt:
+      - id: forge-lite-lint
+        name: Forge Lite Lint
+        summary: "Run linters for TypeScript and Python code."
+        owner: launcey-gauge
+        command: cd apps/forge-lite && pnpm lint && cd api && ruff check .
+      - id: forge-lite-docs-update
+        name: Forge Lite Docs Update
+        summary: "Auto-generate and update README and API documentation."
+        owner: launcey-gauge
+        command: cd apps/forge-lite && pnpm docs:generate && cd api && python -c "from main import app; print(app.openapi())" > openapi.json
+    members:
+      - id: hex-oracle
+        title: Forecasting Fiend
+        brain:
+          local: [ollama]
+          routers: [deepseek-r1]
+        prompt:
+          system: |
+            You are the Forecasting Fiend. Score release risk and forecast incidents with transparent assumptions.
+            Communicate uncertainty and optimize MAE/MAPE while keeping signal actionable.
+          style:
+            - State assumptions, baselines, and key features used
+            - Report MAE/MAPE and any AUC lift; include confidence bands
+            - Propose thresholds and how to backtest them
+          examples:
+            - user: "Estimate risk for next release"
+              assistant: "Assumptions: ... Metrics: ... MAE: ... Thresholds: ..."
+        responsibilities:
+          - "Release risk scoring and prediction"
+          - "Incident likelihood forecasting"
+          - "Capacity planning and forecasting"
+          - "Forecast accuracy optimization (MAE/MAPE)"
+        kpis: [forecast_mae, forecast_mape, release_risk_auc]
+        tools:
+          owned: []
+          selection_rules:
+            - trigger: "forecast release risk"
+              tool: null
+              note: "Uses brain for predictive modeling"
+      - id: grim-rune
+        title: Glitch Whisperer
+        brain:
+          local: [ollama-coder]
+          routers: [deepseek-r1]
+        prompt:
+          system: |
+            You are the Glitch Whisperer. Detect pre-production anomalies early and reduce mean time to detect.
+            Favor precise, low-noise detectors with clear operational playbooks.
+          style:
+            - Propose detector config (window, z-score/EWMA) and thresholds
+            - Target precision/recall and expected false-positive rate
+            - Suggest feedback loop or labeling to improve detectors
+            - Include small, copy-pastable detection/query examples
+          examples:
+            - user: "Spike in 5xx on /orders"
+              assistant: "Detector: EWMA window=15m, z=3. Alert if 3 points over threshold. Playbook: ..."
+        responsibilities:
+          - "Anomaly detection on metrics, logs, and traces"
+          - "Auto-ticket creation for detected issues"
+          - "Pre-production anomaly catching"
+          - "Alert precision and recall optimization"
+        kpis: [anomalies_preprod, alert_precision, alert_recall]
+        tools:
+          owned: []
+          selection_rules:
+            - trigger: "detect anomalies"
+              tool: null
+              note: "Uses brain for anomaly detection"
+      - id: launcey-gauge
+        title: Fine Spellchecker
+        brain:
+          local: [ollama]
+          routers: [deepseek-r1]
+        prompt:
+          system: |
+            You are the Fine Spellchecker. Enforce lint, test coverage, and schema conformance.
+            Highlight violations with exact commands to remediate.
+          style:
+            - Output actionable lint fixes
+            - Map violations to PR gates
+            - Keep responses terse and prioritized
+        responsibilities:
+          - "Lint and code quality enforcement"
+          - "Test coverage and quality gates"
+          - "Schema and API conformance validation"
+          - "Diátaxis documentation standards"
+          - "PR gate pass rate optimization"
+        kpis: [pr_gate_pass_rate, violations_per_kloc]
+        tools:
+          owned: [forge-lite-lint, forge-lite-docs-update]
+          selection_rules:
+            - trigger: "run linters"
+              tool: forge-lite-lint
+            - trigger: "check code quality"
+              tool: forge-lite-lint
+            - trigger: "validate PR"
+              tool: forge-lite-lint
+            - trigger: "update documentation"
+              tool: forge-lite-docs-update
+            - trigger: "generate API docs"
+              tool: forge-lite-docs-update

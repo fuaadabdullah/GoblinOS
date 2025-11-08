@@ -1,0 +1,24 @@
+{
+	"threshold": 5,
+	"reporters": ["html", "console", "badge"],
+	"ignore": [
+		"**/*.min.js",
+		"**/*.d.ts",
+		"**/node_modules/**",
+		"**/dist/**",
+		"**/build/**",
+		"**/.turbo/**",
+		"**/coverage/**",
+		"**/.changeset/**",
+		"**/CHANGELOG.md",
+		"pnpm-lock.yaml"
+	],
+	"absolute": true,
+	"gitignore": true,
+	"format": ["typescript", "javascript", "markup"],
+	"mode": "strict",
+	"minLines": 5,
+	"minTokens": 50,
+	"output": "./reports/jscpd",
+	"silent": false
+}
