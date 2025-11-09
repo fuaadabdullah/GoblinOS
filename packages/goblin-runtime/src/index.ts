@@ -10,6 +10,7 @@ import { GeminiProvider } from "./providers/gemini-provider.js";
 import { OllamaProvider } from "./providers/ollama-provider.js";
 import { OpenAIProvider } from "./providers/openai-provider.js";
 import { RAGService } from "./rag-service.js";
+import { sendSignedAudit, type TaskDecisionAuditEvent, type ToolExecutionAuditEvent } from "./audit-client.js";
 import type {
 	GoblinResponse,
 	GoblinTask,
@@ -170,7 +171,18 @@ export class GoblinRuntime {
 		}
 
 		this.initialized = true;
-		console.log(`✅ GoblinRuntime ready with ${this.goblins.size} goblins\n`);
+		console.log(`✅ GoblinRuntime ready with ${this.goblins.size} goblins`);
+
+		// Check audit service configuration
+		const auditUrl = process.env.AUDIT_URL || 'http://localhost:19001/audit';
+		const hasAuditKeys = !!(process.env.SECRET_KEY_BASE64 && process.env.PUBKEY_BASE64) || !!process.env.KMS_KEY_ID;
+
+		if (hasAuditKeys) {
+			console.log(`✅ Audit logging enabled (${auditUrl})`);
+		} else {
+			console.log(`⚠️  Audit logging disabled - set SECRET_KEY_BASE64/PUBKEY_BASE64 or KMS_KEY_ID`);
+		}
+		console.log("");
 	}
 
 	async executeTask(task: GoblinTask): Promise<GoblinResponse> {
@@ -184,6 +196,22 @@ export class GoblinRuntime {
 		if (!goblin) {
 			throw new Error(`Goblin '${task.goblin}' not found`);
 		}
+
+		// Audit: Task started
+		const taskStartEvent: TaskDecisionAuditEvent = {
+			event_id: randomUUID(),
+			occurred_at: new Date().toISOString(),
+			actor: task.goblin,
+			action: 'task_started',
+			task: task.task,
+			reasoning: '',
+			success: false, // Will be updated
+			duration_ms: 0, // Will be updated
+			context: task.context,
+		};
+		sendSignedAudit(taskStartEvent).catch(err =>
+			console.warn('Failed to send task start audit event:', err)
+		);
 
 		console.log(`🤖 ${goblin.title || task.goblin} is analyzing task...`);
 
@@ -249,6 +277,23 @@ export class GoblinRuntime {
 			kpis: response.kpis,
 			success,
 		});
+
+		// Audit: Task completed
+		const taskCompleteEvent: TaskDecisionAuditEvent = {
+			event_id: randomUUID(),
+			occurred_at: new Date().toISOString(),
+			actor: task.goblin,
+			action: success ? 'task_completed' : 'task_failed',
+			task: task.task,
+			reasoning,
+			success,
+			duration_ms,
+			kpis: response.kpis,
+			context: task.context,
+		};
+		sendSignedAudit(taskCompleteEvent).catch(err =>
+			console.warn('Failed to send task completion audit event:', err)
+		);
 
 		return response;
 	}
@@ -400,8 +445,34 @@ export class GoblinRuntime {
 		const tool = guild.toolbelt.find((t: any) => t.id === rule.tool);
 		if (!tool) return null;
 
+		// Audit: Tool selected
+		const toolSelectEvent: ToolExecutionAuditEvent = {
+			event_id: randomUUID(),
+			occurred_at: new Date().toISOString(),
+			actor: goblin.id,
+			action: 'tool_selected',
+			tool_id: tool.id,
+			command: tool.command,
+			success: false, // Will be updated
+			duration_ms: 0, // Will be updated
+			resource: {
+				type: 'tool',
+				id: tool.id,
+			},
+			context: {
+				task,
+				rule_trigger: rule.trigger,
+				guild: goblin.guild,
+			},
+		};
+		sendSignedAudit(toolSelectEvent).catch(err =>
+			console.warn('Failed to send tool selection audit event:', err)
+		);
+
 		console.log(`\n🔧 Executing tool: ${tool.name}`);
 		console.log(`📦 Command: ${tool.command}\n`);
+
+		const toolStartTime = Date.now();
 
 		try {
 			const { stdout, stderr, exitCode } = await execa(
@@ -417,6 +488,30 @@ export class GoblinRuntime {
 			const output = stdout || stderr || "No output";
 			const success = exitCode === 0;
 
+			// Audit: Tool executed successfully
+			const toolCompleteEvent: ToolExecutionAuditEvent = {
+				event_id: randomUUID(),
+				occurred_at: new Date().toISOString(),
+				actor: goblin.id,
+				action: 'tool_executed',
+				tool_id: tool.id,
+				command: tool.command,
+				success,
+				duration_ms: Date.now() - toolStartTime,
+				resource: {
+					type: 'tool',
+					id: tool.id,
+				},
+				context: {
+					task,
+					output_length: output.length,
+					exit_code: exitCode,
+				},
+			};
+			sendSignedAudit(toolCompleteEvent).catch(err =>
+				console.warn('Failed to send tool execution audit event:', err)
+			);
+
 			return {
 				tool: tool.id,
 				command: tool.command,
@@ -425,6 +520,29 @@ export class GoblinRuntime {
 				success,
 			};
 		} catch (error: any) {
+			// Audit: Tool execution failed
+			const toolFailEvent: ToolExecutionAuditEvent = {
+				event_id: randomUUID(),
+				occurred_at: new Date().toISOString(),
+				actor: goblin.id,
+				action: 'tool_failed',
+				tool_id: tool.id,
+				command: tool.command,
+				success: false,
+				duration_ms: Date.now() - toolStartTime,
+				resource: {
+					type: 'tool',
+					id: tool.id,
+				},
+				context: {
+					task,
+					error: error.message,
+				},
+			};
+			sendSignedAudit(toolFailEvent).catch(err =>
+				console.warn('Failed to send tool failure audit event:', err)
+			);
+
 			return {
 				tool: tool.id,
 				command: tool.command,

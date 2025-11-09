@@ -24,11 +24,13 @@
 		"@goblinos/tool-selector": "workspace:*",
 		"@google/generative-ai": "^0.24.1",
 		"better-sqlite3": "^9.2.2",
+		"canonicalize": "^2.0.0",
 		"cors": "^2.8.5",
 		"execa": "^8.0.1",
 		"express": "^5.1.0",
 		"ollama": "^0.5.0",
 		"openai": "^4.67.3",
+		"tweetnacl": "^1.0.3",
 		"ws": "^8.18.3"
 	},
 	"devDependencies": {

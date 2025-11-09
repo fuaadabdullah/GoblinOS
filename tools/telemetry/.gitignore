@@ -1,0 +1,6 @@
+# telemetry PoC artifacts
+**/overmind/node_modules/
+**/overmind/ed25519_keypair.json
+**/litebrain/.venv/
+**/litebrain/__pycache__/
+**/audit/audit_events.jsonl

@@ -86,6 +86,11 @@ guilds:
         summary: "Submit builds to TestFlight and Play Console for testing."
         owner: dregg-embercode
         command: cd apps/forge-lite && eas submit --platform ios && eas submit --platform android
+      - id: framework-migrator
+        name: Framework Migrator
+        summary: "Analyzes code for framework/library porting issues and assists with migration."
+        owner: dregg-embercode
+        command: bash tools/migration_assistant.sh --scan
     members:
       - id: dregg-embercode
         title: Forge Master
@@ -120,11 +125,22 @@ guilds:
               tool: forge-lite-release-build
             - trigger: "submit to app stores"
               tool: forge-lite-release-submit
+            - trigger: "port framework"
+              tool: framework-migrator
+              note: "Use when migrating between framework major versions."
+            - trigger: "upgrade libraries"
+              tool: framework-migrator
+              note: "Use when upgrading core libraries or dependencies."
 
   - name: Crafters
     verbosity: normal
     charter: "UI systems, theme tokens, a11y, CLS/LCP budgets; APIs, schemas, queues, idempotency, error budgets."
     toolbelt:
+      - id: forge-lite-bootstrap
+        name: Forge Lite Repo Bootstrap
+        summary: "Bootstrap a new Forge Lite repo - install deps, setup environment, create .env.local"
+        owner: vanta-lumin
+        command: bash tools/forge_lite_env.sh setup
       - id: forge-lite-dev
         name: Forge Lite Dev Server
         summary: "Run Expo dev server for ForgeTM Lite mobile app."
@@ -205,8 +221,14 @@ guilds:
           - "CLS/LCP performance budgets and design QA"
         kpis: [cls, lcp, a11y_score]
         tools:
-          owned: [portfolio-dev, portfolio-build, forge-lite-dev, forge-lite-telemetry-check, forge-lite-docs-update]
+          owned: [portfolio-dev, portfolio-build, forge-lite-bootstrap, forge-lite-dev, forge-lite-telemetry-check, forge-lite-docs-update]
           selection_rules:
+            - trigger: "bootstrap forge lite repo"
+              tool: forge-lite-bootstrap
+            - trigger: "setup forge lite environment"
+              tool: forge-lite-bootstrap
+            - trigger: "initialize forge lite project"
+              tool: forge-lite-bootstrap
             - trigger: "start portfolio dev server"
               tool: portfolio-dev
             - trigger: "build portfolio"
