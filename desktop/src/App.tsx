@@ -6,13 +6,20 @@ import {
 	runtimeClient,
 } from "./api/tauri-client";
 import "./App.css";
+import ProviderSelector from "./components/ProviderSelector";
+import StreamingView from "./components/StreamingView";
+import CostPanel from "./components/CostPanel";
+import OrchestrationPreview from "./components/OrchestrationPreview";
+import APIKeyManager from "./components/APIKeyManager";
 
 function App() {
 	const [goblins, setGoblins] = useState<GoblinStatus[]>([]);
 	const [providers, setProviders] = useState<string[]>([]);
 	const [selectedGoblin, setSelectedGoblin] = useState<string | null>(null);
 	const [selectedProvider, setSelectedProvider] = useState<string>("");
+	const [providerModels, setProviderModels] = useState<string[]>([]);
 	const [task, setTask] = useState("");
+	const [selectedModel, setSelectedModel] = useState<string>("");
 	const [orchestrationText, setOrchestrationText] = useState("");
 	const [response, setResponse] = useState("");
 	const [streamingResponse, setStreamingResponse] = useState("");
@@ -25,6 +32,17 @@ function App() {
 	useEffect(() => {
 		loadInitialData();
 	}, []);
+
+	useEffect(() => {
+		if (!selectedProvider) {
+			setProviderModels([]);
+			return;
+		}
+		runtimeClient
+			.getProviderModels(selectedProvider)
+			.then((m) => setProviderModels(m))
+			.catch(() => setProviderModels([]));
+	}, [selectedProvider]);
 
 	async function loadInitialData() {
 		try {
@@ -40,9 +58,15 @@ function App() {
 
 			if (goblinList.length > 0) {
 				setSelectedGoblin(goblinList[0].id);
-			}
-			if (providerList.length > 0) {
-				setSelectedProvider(providerList[0]);
+				// Prefer per-goblin router if present (brain.router or router)
+				const first = goblinList[0] as any;
+				const preferred =
+					(first?.brain && first.brain.router) || first?.router || undefined;
+				if (preferred && providerList.includes(preferred)) {
+					setSelectedProvider(preferred);
+				} else if (providerList.length > 0) {
+					setSelectedProvider(providerList[0]);
+				}
 			}
 		} catch (error) {
 			console.error("Failed to load initial data:", error);
@@ -75,6 +99,8 @@ function App() {
 							.then(setCostSummary)
 							.catch(() => {});
 					},
+					selectedProvider || undefined,
+					selectedModel || undefined,
 				);
 			} else {
 				// Regular execution
@@ -82,6 +108,8 @@ function App() {
 					selectedGoblin,
 					task,
 					false,
+					selectedProvider || undefined,
+					selectedModel || undefined,
 				);
 				setResponse(result.reasoning);
 				setLoading(false);
@@ -120,8 +148,9 @@ function App() {
 			</p>
 
 			<div className="goblin-selector">
-				<label>Select Goblin:</label>
+				<label htmlFor="goblin-select">Select Goblin:</label>
 				<select
+					id="goblin-select"
 					value={selectedGoblin || ""}
 					onChange={(e) => setSelectedGoblin(e.target.value)}
 					disabled={goblins.length === 0}
@@ -135,17 +164,15 @@ function App() {
 			</div>
 
 			{providers.length > 0 && (
-				<div className="goblin-selector">
-					<label>Available Providers:</label>
-					<div className="provider-list">
-						{providers.map((provider) => (
-							<span key={provider} className="status active">
-								{provider}
-							</span>
-						))}
-					</div>
-				</div>
+				<ProviderSelector
+					providers={providers}
+					selected={selectedProvider}
+					onChange={(p) => setSelectedProvider(p)}
+				/>
 			)}
+
+			{/* Secure API key manager (stores keys in OS keychain via Tauri) */}
+			<APIKeyManager />
 
 			<form
 				className="task-form"
@@ -161,6 +188,30 @@ function App() {
 					placeholder="Enter a task for your goblin..."
 					disabled={loading || !selectedGoblin}
 				/>
+				{providerModels && providerModels.length > 0 ? (
+					<select
+						aria-label="Select model"
+						id="model-select"
+						value={selectedModel}
+						onChange={(e) => setSelectedModel(e.currentTarget.value)}
+						disabled={loading || !selectedGoblin}
+					>
+						<option value="">(provider default)</option>
+						{providerModels.map((m) => (
+							<option value={m} key={m}>
+								{m}
+							</option>
+						))}
+					</select>
+				) : (
+					<input
+						id="model-input"
+						value={selectedModel}
+						onChange={(e) => setSelectedModel(e.currentTarget.value)}
+						placeholder="(optional) model override"
+						disabled={loading || !selectedGoblin}
+					/>
+				)}
 				<label className="streaming-toggle">
 					<input
 						type="checkbox"
@@ -195,53 +246,18 @@ function App() {
 			</div>
 
 			{orchestrationPlan && (
-				<div className="response-box">
-					<h3>Orchestration Plan:</h3>
-					<pre>{JSON.stringify(orchestrationPlan, null, 2)}</pre>
-				</div>
+				<OrchestrationPreview plan={orchestrationPlan} />
 			)}
 
-			{(response || streamingResponse) && (
+			{streaming && <StreamingView streamingText={streamingResponse} />}
+			{!streaming && response && (
 				<div className="response-box">
 					<h3>Response:</h3>
-					<pre>{streamingResponse || response}</pre>
+					<pre>{response}</pre>
 				</div>
 			)}
 
-			{costSummary && (
-				<div className="response-box">
-					<h3>Cost Summary:</h3>
-					<div className="cost-summary">
-						<div>
-							<strong>Total Cost:</strong> ${costSummary.total_cost.toFixed(6)}
-						</div>
-						<div>
-							<strong>By Provider:</strong>
-							<ul>
-								{Object.entries(costSummary.cost_by_provider).map(
-									([provider, cost]) => (
-										<li key={provider}>
-											{provider}: ${cost.toFixed(6)}
-										</li>
-									),
-								)}
-							</ul>
-						</div>
-						<div>
-							<strong>By Model:</strong>
-							<ul>
-								{Object.entries(costSummary.cost_by_model).map(
-									([model, cost]) => (
-										<li key={model}>
-											{model}: ${cost.toFixed(6)}
-										</li>
-									),
-								)}
-							</ul>
-						</div>
-					</div>
-				</div>
-			)}
+			<CostPanel costSummary={costSummary} />
 
 			<div className="goblin-list">
 				<h3>Available Goblins:</h3>

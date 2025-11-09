@@ -26,11 +26,14 @@ impl ModelProvider for AnthropicProvider {
         &self,
         prompt: &str,
         system: Option<&str>,
-    ) -> Result<GenerateResponse, Box<dyn std::error::Error>> {
+        model: Option<&str>,
+    ) -> Result<GenerateResponse, Box<dyn std::error::Error + Send + Sync>> {
         let client = reqwest::Client::new();
 
+        let model_to_use = model.map(|m| m.to_string()).unwrap_or_else(|| self.model.clone());
+
         let mut payload = json!({
-            "model": self.model,
+            "model": model_to_use,
             "max_tokens": 4096,
             "messages": [{
                 "role": "user",
@@ -68,7 +71,7 @@ impl ModelProvider for AnthropicProvider {
 
         Ok(GenerateResponse {
             content,
-            model: self.model.clone(),
+            model: model_to_use,
             tokens,
         })
     }
@@ -77,18 +80,21 @@ impl ModelProvider for AnthropicProvider {
         &self,
         prompt: &str,
         system: Option<&str>,
+        model: Option<&str>,
     ) -> Result<
         Box<
-            dyn futures_util::Stream<Item = Result<StreamChunk, Box<dyn std::error::Error>>>
+            dyn futures_util::Stream<Item = Result<StreamChunk, Box<dyn std::error::Error + Send + Sync>>>
                 + Send
                 + Unpin,
         >,
-        Box<dyn std::error::Error>,
+        Box<dyn std::error::Error + Send + Sync>,
     > {
         let client = reqwest::Client::new();
 
+        let model_to_use = model.map(|m| m.to_string()).unwrap_or_else(|| self.model.clone());
+
         let mut payload = json!({
-            "model": self.model,
+            "model": model_to_use,
             "max_tokens": 4096,
             "messages": [{
                 "role": "user",
@@ -112,10 +118,10 @@ impl ModelProvider for AnthropicProvider {
 
         let stream = response.bytes_stream().map(|chunk_result| {
             chunk_result
-                .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+                .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
                 .and_then(|bytes| {
-                    String::from_utf8(bytes.to_vec())
-                        .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+                        String::from_utf8(bytes.to_vec())
+                            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
                 })
                 .and_then(|text| {
                     let mut result = StreamChunk {

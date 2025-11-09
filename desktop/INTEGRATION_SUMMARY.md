@@ -1,20 +1,22 @@
 # GoblinOS Desktop - Multi-Provider Integration Summary
 
 **Date**: December 2024
-**Status**: Backend Complete ✅ | Frontend UI Pending 🔄
+**Status**: Backend Complete ✅ | Frontend UI NOT WIRED — Immediate Action Required ⚠️
 
 ---
 
-## Overview
+## Overview (Migration gap)
 
-Successfully integrated **four major features** into GoblinOS Desktop Tauri app:
+The Tauri/Rust backend implementing multi-provider, streaming, orchestration parsing and cost tracking is complete and tested.
+However, the React UI in `desktop/src/` has not been wired to the new TypeScript bindings and Tauri commands. As a result, operators cannot access the new capabilities from the desktop app. This document fixes that migration gap by listing the exact frontend wiring steps, priorities, and quick code pointers so the UI can surface streaming tokens, provider selection, orchestration previews and cost summaries to users.
 
-1. ✅ **Multi-provider support** - OpenAI, Anthropic, Gemini, Ollama
-2. ✅ **Streaming responses** - Real-time token-by-token display
-3. ✅ **Orchestration parser** - THEN/AND/IF workflow syntax
-4. ✅ **Cost tracking** - Per-provider/model expense visibility
+What to fix (high level):
+- Wire the new `tauri-commands` bindings into core UI flows (`executeTask`, streaming helpers, `getProviders`, `getCostSummary`, `parseOrchestration`).
+- Add a streaming UI component that listens for `stream-token` events and renders tokens progressively.
+- Create a provider selector and cost summary panel that calls `getProviders()` and `getCostSummary()` and shows model-level breakdowns.
+- Hook orchestration editor/preview to `parseOrchestration()` and display the returned `OrchestrationPlan` visually.
 
-All Rust backend code complete and compiling. TypeScript bindings created. Ready for UI integration.
+Priority: Make streaming + provider selection available to operators first (high impact, low surface area). Then add cost summary and orchestration preview.
 
 ---
 
@@ -364,11 +366,55 @@ console.log(summary.total_cost); // Should be 0.0 for Ollama
 
 ### Frontend (Required)
 
-- [ ] **Streaming UI component** - Display tokens progressively with auto-scroll
+- [x] **Provider selector** - Dropdown to choose OpenAI/Anthropic/Gemini/Ollama (implemented in `desktop/src/components/ProviderSelector.tsx` and wired in `App.tsx`).
+- [x] **API Key manager** - UI to store provider API keys securely in OS keychain and immediately update runtime providers (`desktop/src/components/APIKeyManager.tsx`).
+- [ ] **Streaming UI component** - Display tokens progressively with auto-scroll (StreamingView component added; integrate styling as needed)
 - [ ] **Cost summary panel** - Show breakdown by provider/model
-- [ ] **Provider selector** - Dropdown to choose OpenAI/Anthropic/Gemini/Ollama
 - [ ] **Orchestration preview** - Visualize plan steps/dependencies/batches
 - [ ] **Workflow builder** - Visual editor for orchestration syntax (optional)
+
+### Frontend wiring examples
+
+Minimal examples showing how the React UI should call the TypeScript bindings and use the new components created in `desktop/src/components/`.
+
+1) Execute streaming with incremental tokens (already implemented by `tauri-client.executeTaskStreaming`):
+
+```typescript
+import { runtimeClient } from './api/tauri-client';
+
+// start streaming
+await runtimeClient.executeTaskStreaming(
+  selectedGoblin,
+  'Write a short summary',
+  (token) => {
+    // append token to local state
+    setStreamingText((s) => s + token);
+  },
+  (finalResponse) => {
+    setFinalResponse(finalResponse.reasoning);
+    // refresh costs
+    runtimeClient.getCostSummary().then(setCostSummary);
+  }
+);
+```
+
+2) Provider selector (presentational component):
+
+```tsx
+<ProviderSelector
+  providers={providers}
+  selected={selectedProvider}
+  onChange={(p) => setSelectedProvider(p)}
+/>
+```
+
+3) Cost panel usage:
+
+```tsx
+<CostPanel costSummary={costSummary} />
+```
+
+Those snippets are intentionally small and map directly to the components added under `desktop/src/components/`.
 
 ### Testing
 

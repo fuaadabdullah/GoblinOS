@@ -1,0 +1,7 @@
+{
+  "type": "dry-run",
+  "id": "forge-lite-dev",
+  "command": "cd apps/forge-lite && pnpm dev",
+  "ts": "2025-11-09T12:47:37.885Z",
+  "user": "fuaadabdullah"
+}

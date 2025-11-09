@@ -34,19 +34,21 @@ pub struct StreamChunk {
     pub tokens: Option<TokenUsage>,
 }
 
+
 #[async_trait]
 pub trait ModelProvider: Send + Sync {
     /// Generate a complete response
-    async fn generate(&self, prompt: &str, system: Option<&str>) -> Result<GenerateResponse, Box<dyn std::error::Error>>;
+    async fn generate(&self, prompt: &str, system: Option<&str>, model: Option<&str>) -> Result<GenerateResponse, Box<dyn std::error::Error + Send + Sync>>;
 
     /// Generate a streaming response
     async fn generate_stream(
         &self,
         prompt: &str,
         system: Option<&str>,
+        model: Option<&str>,
     ) -> Result<
-        Box<dyn futures_util::Stream<Item = Result<StreamChunk, Box<dyn std::error::Error>>> + Send + Unpin>,
-        Box<dyn std::error::Error>,
+        Box<dyn futures_util::Stream<Item = Result<StreamChunk, Box<dyn std::error::Error + Send + Sync>>> + Send + Unpin>,
+        Box<dyn std::error::Error + Send + Sync>,
     >;
 
     /// Get provider name
@@ -55,3 +57,5 @@ pub trait ModelProvider: Send + Sync {
     /// Get model name
     fn model_name(&self) -> &str;
 }
+
+

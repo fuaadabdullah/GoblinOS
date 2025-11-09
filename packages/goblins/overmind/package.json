@@ -1,0 +1,20 @@
+{
+  "name": "@goblinos/overmind",
+  "version": "0.1.0",
+  "description": "Overmind orchestrator - workspace package placeholder",
+  "type": "module",
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.6.2",
+    "tsx": "^4.19.1"
+  }
+}

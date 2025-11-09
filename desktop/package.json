@@ -8,7 +8,8 @@
 		"build": "tauri build",
 		"build:mac": "tauri build --target universal-apple-darwin",
 		"preview": "vite preview",
-		"tauri": "tauri"
+		"tauri": "tauri",
+		"test": "vitest"
 	},
 	"dependencies": {
 		"@tauri-apps/api": "^2.9.0",
@@ -18,10 +19,17 @@
 	},
 	"devDependencies": {
 		"@tauri-apps/cli": "^2",
+		"@testing-library/jest-dom": "^6.0.0",
+		"@testing-library/react": "^14.0.0",
 		"@types/react": "^19.1.8",
 		"@types/react-dom": "^19.1.6",
-		"@vitejs/plugin-react": "^4.6.0",
+		"@vitejs/plugin-react": "^4.7.0",
+		"jsdom": "^22.0.0",
 		"typescript": "~5.8.3",
-		"vite": "^7.0.4"
+		"vite": "^7.0.4",
+		"vitest": "^1.0.0"
+	},
+	"vitest": {
+		"environment": "jsdom"
 	}
 }

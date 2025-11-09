@@ -39,6 +39,7 @@ chrono = { version = "0.4", features = ["serde"] }
 dirs = "5.0"
 futures-util = "0.3"
 regex = "1.10"
+keyring = "1.0"
 
 [features]
 # Default features keep surface minimal; shell available by default for task execution utilities.

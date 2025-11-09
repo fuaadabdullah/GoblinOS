@@ -11,8 +11,8 @@
 		"clean": "rm -rf dist"
 	},
 	"dependencies": {
-		"@goblinos/overmind": "workspace:*",
-		"@overmind/observability": "workspace:*",
+		"@goblinos/overmind": "file:..",
+		"@overmind/observability": "file:../observability",
 		"better-sqlite3": "^9.6.0",
 		"express": "^4.19.2",
 		"cors": "^2.8.5",

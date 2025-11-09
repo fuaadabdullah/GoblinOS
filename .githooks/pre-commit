@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Pre-commit hook to check for secrets using detect-secrets or git-secrets if available.
+set -e
+
+echo "Running GoblinOS pre-commit checks..."
+
+if command -v detect-secrets >/dev/null 2>&1; then
+  echo "detect-secrets found, scanning..."
+  # scan all files; detect-secrets returns non-zero if potential secrets are found
+  detect-secrets scan --all-files
+  echo "detect-secrets scan complete. If the scan exits non-zero, fix the findings before committing."
+elif command -v git-secrets >/dev/null 2>&1; then
+  echo "git-secrets found, scanning..."
+  git secrets --scan
+  echo "git-secrets scan complete. If the scan exits non-zero, fix the findings before committing."
+else
+  echo "No detect-secrets or git-secrets installed. Skipping secret-scan."
+  echo "To enable: pipx install detect-secrets  OR brew install git-secrets && git secrets --register-aws"
+fi
+
+# Optionally run shellcheck on staged shell scripts if shellcheck is installed
+if command -v shellcheck >/dev/null 2>&1; then
+  echo "shellcheck found, linting staged shell scripts..."
+  files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.sh$' || true)
+  for f in $files; do
+    [ -f "$f" ] && shellcheck "$f" || true
+  done
+fi
+
+exit 0

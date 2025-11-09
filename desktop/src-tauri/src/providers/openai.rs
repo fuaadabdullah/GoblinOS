@@ -26,7 +26,8 @@ impl ModelProvider for OpenAIProvider {
         &self,
         prompt: &str,
         system: Option<&str>,
-    ) -> Result<GenerateResponse, Box<dyn std::error::Error>> {
+        model: Option<&str>,
+    ) -> Result<GenerateResponse, Box<dyn std::error::Error + Send + Sync>> {
         let client = reqwest::Client::new();
         let mut messages = vec![];
 
@@ -42,12 +43,14 @@ impl ModelProvider for OpenAIProvider {
             "content": prompt
         }));
 
+        let model_to_use = model.map(|m| m.to_string()).unwrap_or_else(|| self.model.clone());
+
         let response = client
             .post(format!("{}/chat/completions", self.base_url))
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
             .json(&json!({
-                "model": self.model,
+                "model": model_to_use,
                 "messages": messages,
                 "stream": false
             }))
@@ -71,7 +74,7 @@ impl ModelProvider for OpenAIProvider {
 
         Ok(GenerateResponse {
             content,
-            model: self.model.clone(),
+            model: model_to_use,
             tokens,
         })
     }
@@ -80,13 +83,14 @@ impl ModelProvider for OpenAIProvider {
         &self,
         prompt: &str,
         system: Option<&str>,
+        model: Option<&str>,
     ) -> Result<
         Box<
-            dyn futures_util::Stream<Item = Result<StreamChunk, Box<dyn std::error::Error>>>
+            dyn futures_util::Stream<Item = Result<StreamChunk, Box<dyn std::error::Error + Send + Sync>>>
                 + Send
                 + Unpin,
         >,
-        Box<dyn std::error::Error>,
+        Box<dyn std::error::Error + Send + Sync>,
     > {
         let client = reqwest::Client::new();
         let mut messages = vec![];
@@ -103,12 +107,14 @@ impl ModelProvider for OpenAIProvider {
             "content": prompt
         }));
 
+        let model_to_use = model.map(|m| m.to_string()).unwrap_or_else(|| self.model.clone());
+
         let response = client
             .post(format!("{}/chat/completions", self.base_url))
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
             .json(&json!({
-                "model": self.model,
+                "model": model_to_use,
                 "messages": messages,
                 "stream": true
             }))
@@ -117,10 +123,10 @@ impl ModelProvider for OpenAIProvider {
 
         let stream = response.bytes_stream().map(|chunk_result| {
             chunk_result
-                .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+                .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
                 .and_then(|bytes| {
                     String::from_utf8(bytes.to_vec())
-                        .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+                        .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
                 })
                 .and_then(|text| {
                     let mut result = StreamChunk {

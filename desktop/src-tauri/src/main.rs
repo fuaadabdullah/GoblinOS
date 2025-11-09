@@ -66,11 +66,17 @@ async fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::get_goblins,
             commands::get_providers,
+            commands::get_provider_models,
             commands::execute_task,
             commands::get_history,
             commands::get_stats,
             commands::get_cost_summary,
             commands::parse_orchestration,
+            // Secure key storage
+            commands::store_api_key,
+            commands::get_api_key,
+            commands::clear_api_key,
+            commands::set_provider_api_key,
         ])
         .setup(|app| {
             #[cfg(debug_assertions)]

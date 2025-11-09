@@ -17,6 +17,23 @@ pnpm install
 pnpm build
 ```
 
+## Goblin CLI (quick run)
+
+GoblinOS exposes a declarative set of "goblins" in `GoblinOS/goblins.yaml`. A small helper script will be provided to list and safely run these goblins. Example usage (placeholder until `goblin-cli` is added):
+
+```bash
+# List available goblins
+bash GoblinOS/goblin-cli.sh list
+
+# Dry-run a goblin (safe)
+bash GoblinOS/goblin-cli.sh run --dry <goblin-id>
+
+# Execute (owners only for destructive tasks)
+bash GoblinOS/goblin-cli.sh run <goblin-id>
+```
+
+Note: A lightweight `goblin-cli` scaffold will be added soon to validate and safely execute entries in `GoblinOS/goblins.yaml`.
+
 **Before opening a PR:**
 
 ```bash
@@ -138,6 +155,7 @@ GoblinOS is hardened with:
 
 ## 📚 Documentation
 
+- **[🧭 SOURCE_OF_TRUTH.md](./SOURCE_OF_TRUTH.md)** - Canonical map of mission, architecture, workflows, and runbooks
 - **[📋 COMMANDS.md](./docs/COMMANDS.md)** - Quick command reference
 - **[⚙️ SETUP.md](./docs/SETUP.md)** - Installation & troubleshooting
 - **[🛡️ PRODUCTION_HARDENING.md](./docs/PRODUCTION_HARDENING.md)** - Deep dive on tooling

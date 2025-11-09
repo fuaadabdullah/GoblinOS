@@ -1,6 +1,6 @@
 # GoblinOS Roles — Overview
 
-Last updated: 2025-11-06
+Last updated: 2025-11-09
 Source of truth: `GoblinOS/goblins.yaml`
 
 This document is generated from the YAML and summarizes the Overmind, guilds, members, brains, and KPIs.
@@ -21,15 +21,27 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
   - **portfolio-dev** — Portfolio Dev Server
     - Summary: Run the portfolio locally with NEXT_PUBLIC_SITE_URL managed by the guild.
     - Owner: vanta-lumin
-    - Command: `NEXT_PUBLIC_SITE_URL="http://localhost:3000" PORTFOLIO_DIR="/Users/fuaadabdullah/Downloads/fuaad-portfolio-starter" bash tools/portfolio_env.sh dev`
+    - Command: `NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}" PORTFOLIO_DIR="${PORTFOLIO_DIR:-/Users/fuaadabdullah/Downloads/fuaad-portfolio-starter}" bash tools/portfolio_env.sh dev`
   - **portfolio-build** — Portfolio Build
     - Summary: Build the portfolio with NEXT_PUBLIC_SITE_URL managed by the guild.
     - Owner: vanta-lumin
-    - Command: `NEXT_PUBLIC_SITE_URL="http://localhost:3000" PORTFOLIO_DIR="/Users/fuaadabdullah/Downloads/fuaad-portfolio-starter" bash tools/portfolio_env.sh build`
+    - Command: `NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}" PORTFOLIO_DIR="${PORTFOLIO_DIR:-/Users/fuaadabdullah/Downloads/fuaad-portfolio-starter}" bash tools/portfolio_env.sh build`
   - **forge-lite-build** — Forge Lite Build
     - Summary: Build production bundle for all platforms.
     - Owner: dregg-embercode
     - Command: `cd apps/forge-lite && pnpm build`
+  - **forge-lite-release-build** — Forge Lite Release Build
+    - Summary: Build production bundles for iOS, Android, and Web using EAS.
+    - Owner: dregg-embercode
+    - Command: `cd apps/forge-lite && eas build --platform all --profile production`
+  - **forge-lite-release-submit** — Forge Lite Release Submit
+    - Summary: Submit builds to TestFlight and Play Console for testing.
+    - Owner: dregg-embercode
+    - Command: `cd apps/forge-lite && eas submit --platform ios && eas submit --platform android`
+  - **framework-migrator** — Framework Migrator
+    - Summary: Analyzes code for framework/library porting issues and assists with migration.
+    - Owner: dregg-embercode
+    - Command: `bash tools/migration_assistant.sh --scan`
 - Members
   - dregg-embercode — Forge Master
     - Brain: local=[ollama], routers=[deepseek-r1], embeddings=[nomic-embed-text]
@@ -39,16 +51,24 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
       - Break-glass fixes for critical issues
       - Hot-reload time and build reliability
     - Tools:
-      - Owned: forge-lite-build
+      - Owned: forge-lite-build, forge-lite-release-build, forge-lite-release-submit
       - Selection Rules:
         - "build production bundle" → forge-lite-build
         - "optimize build performance" → forge-lite-build
         - "check build time" → forge-lite-build
+        - "build for release" → forge-lite-release-build
+        - "submit to app stores" → forge-lite-release-submit
+        - "port framework" → framework-migrator
+        - "upgrade libraries" → framework-migrator
     - KPIs: p95_build_time, hot_reload_time, failed_build_rate
 
 ### Crafters
 - Charter: UI systems, theme tokens, a11y, CLS/LCP budgets; APIs, schemas, queues, idempotency, error budgets.
 - Toolbelt:
+  - **forge-lite-bootstrap** — Forge Lite Repo Bootstrap
+    - Summary: Bootstrap a new Forge Lite repo - install deps, setup environment, create .env.local
+    - Owner: vanta-lumin
+    - Command: `bash tools/forge_lite_env.sh setup`
   - **forge-lite-dev** — Forge Lite Dev Server
     - Summary: Run Expo dev server for ForgeTM Lite mobile app.
     - Owner: vanta-lumin
@@ -56,7 +76,43 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
   - **forge-lite-api-dev** — Forge Lite API Server
     - Summary: Run FastAPI backend for risk calculations and analytics.
     - Owner: volt-furnace
-    - Command: `cd apps/forge-lite/api && uvicorn main:app --reload --port 8000`
+    - Command: `cd /Users/fuaadabdullah/ForgeMonorepo/apps/forge-lite/api && uvicorn main:app --reload --port 8000`
+  - **forge-lite-db-migrate** — Forge Lite DB Migrate
+    - Summary: Run Supabase migrations against the linked database.
+    - Owner: volt-furnace
+    - Command: `cd apps/forge-lite/supabase && supabase db push`
+  - **forge-lite-rls-check** — Forge Lite RLS Check
+    - Summary: Heuristically audit migrations for RLS enablement and policies.
+    - Owner: volt-furnace
+    - Command: `bash tools/supabase_rls_check.sh apps/forge-lite/supabase`
+  - **forge-lite-auth-login** — Forge Lite Supabase Login
+    - Summary: Authenticate Supabase CLI to manage DB and auth locally/remotely.
+    - Owner: volt-furnace
+    - Command: `supabase login`
+  - **forge-lite-market-data-fetch** — Forge Lite Market Data Fetch
+    - Summary: Fetch and cache market data from Alpha Vantage/Finnhub for offline-first trading.
+    - Owner: volt-furnace
+    - Command: `cd apps/forge-lite/api && python -c "from services.market_data import fetch_and_cache_market_data; fetch_and_cache_market_data()"`
+  - **forge-lite-telemetry-check** — Forge Lite Telemetry Check
+    - Summary: Verify Sentry and PostHog integration for crash reporting and analytics.
+    - Owner: vanta-lumin
+    - Command: `cd apps/forge-lite && pnpm telemetry:check`
+  - **forge-lite-release-build** — Forge Lite Release Build
+    - Summary: Build production bundles for iOS, Android, and Web using EAS.
+    - Owner: dregg-embercode
+    - Command: `cd apps/forge-lite && eas build --platform all --profile production`
+  - **forge-lite-release-submit** — Forge Lite Release Submit
+    - Summary: Submit builds to TestFlight and Play Console for testing.
+    - Owner: dregg-embercode
+    - Command: `cd apps/forge-lite && eas submit --platform ios && eas submit --platform android`
+  - **forge-lite-export-data** — Forge Lite Data Export
+    - Summary: Export user trades and journal data as CSV for compliance and portability.
+    - Owner: volt-furnace
+    - Command: `cd apps/forge-lite/api && python -c "from services.export import export_user_data; export_user_data()"`
+  - **forge-lite-docs-update** — Forge Lite Docs Update
+    - Summary: Auto-generate and update README and API documentation.
+    - Owner: launcey-gauge
+    - Command: `cd apps/forge-lite && pnpm docs:generate && cd api && python -c "from main import app; print(app.openapi())" > openapi.json`
 - Members
   - vanta-lumin — Glyph Scribe
     - Brain: local=[ollama], routers=[deepseek-r1]
@@ -66,12 +122,17 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
       - Accessibility (a11y) compliance
       - CLS/LCP performance budgets and design QA
     - Tools:
-      - Owned: portfolio-dev, portfolio-build, forge-lite-dev
+      - Owned: portfolio-dev, portfolio-build, forge-lite-bootstrap, forge-lite-dev, forge-lite-telemetry-check, forge-lite-docs-update
       - Selection Rules:
+        - "bootstrap forge lite repo" → forge-lite-bootstrap
+        - "setup forge lite environment" → forge-lite-bootstrap
+        - "initialize forge lite project" → forge-lite-bootstrap
         - "start portfolio dev server" → portfolio-dev
         - "build portfolio" → portfolio-build
         - "start forge lite UI development" → forge-lite-dev
         - "test UI components" → forge-lite-dev
+        - "check telemetry integration" → forge-lite-telemetry-check
+        - "update documentation" → forge-lite-docs-update
     - KPIs: cls, lcp, a11y_score
   - volt-furnace — Socketwright
     - Brain: local=[ollama-coder], routers=[deepseek-r1]
@@ -81,11 +142,16 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
       - Message queues and async processing
       - Idempotency and error budget enforcement
     - Tools:
-      - Owned: forge-lite-api-dev
+      - Owned: forge-lite-api-dev, forge-lite-db-migrate, forge-lite-rls-check, forge-lite-auth-login, forge-lite-market-data-fetch, forge-lite-export-data
       - Selection Rules:
         - "start API server" → forge-lite-api-dev
         - "test API endpoints" → forge-lite-api-dev
         - "debug backend logic" → forge-lite-api-dev
+        - "run db migrations" → forge-lite-db-migrate
+        - "check rls policies" → forge-lite-rls-check
+        - "auth login" → forge-lite-auth-login
+        - "fetch market data" → forge-lite-market-data-fetch
+        - "export user data" → forge-lite-export-data
     - KPIs: p99_latency, error_rate, schema_drift
 
 ### Huntress
@@ -95,6 +161,18 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
     - Summary: Run all tests for ForgeTM Lite (frontend + backend).
     - Owner: magnolia-nightbloom
     - Command: `cd apps/forge-lite && pnpm test && cd api && pytest`
+  - **forge-lite-e2e-test** — Forge Lite E2E Tests
+    - Summary: Run end-to-end tests for critical user flows (risk calc, trade journal).
+    - Owner: magnolia-nightbloom
+    - Command: `cd apps/forge-lite && pnpm test:e2e`
+  - **forge-lite-smoke-test** — Forge Lite Smoke Tests
+    - Summary: Run smoke tests on all platforms (iOS, Android, Web) for basic functionality.
+    - Owner: magnolia-nightbloom
+    - Command: `cd apps/forge-lite && pnpm test:smoke`
+  - **forge-lite-feedback-export** — Forge Lite Feedback Export
+    - Summary: Export user feedback, bug reports, and feature requests for analysis.
+    - Owner: magnolia-nightbloom
+    - Command: `cd apps/forge-lite/api && python -c "from services.feedback import export_feedback; export_feedback()"`
 - Members
   - magnolia-nightbloom — Vermin Huntress
     - Brain: local=[ollama-coder], routers=[openai]
@@ -104,11 +182,17 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
       - Incident tagging and categorization
       - MTTR reduction for test failures
     - Tools:
-      - Owned: forge-lite-test
+      - Owned: forge-lite-test, forge-lite-e2e-test, forge-lite-smoke-test, forge-lite-feedback-export
       - Selection Rules:
         - "run tests" → forge-lite-test
         - "identify flaky tests" → forge-lite-test
         - "regression check" → forge-lite-test
+        - "run e2e tests" → forge-lite-e2e-test
+        - "test user flows" → forge-lite-e2e-test
+        - "run smoke tests" → forge-lite-smoke-test
+        - "test basic functionality" → forge-lite-smoke-test
+        - "export user feedback" → forge-lite-feedback-export
+        - "analyze bug reports" → forge-lite-feedback-export
     - KPIs: flaky_rate, mttr_test_failures
   - mags-charietto — Omenfinder
     - Brain: local=[ollama-coder], routers=[gemini]
@@ -148,6 +232,10 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
     - Summary: Run linters for TypeScript and Python code.
     - Owner: launcey-gauge
     - Command: `cd apps/forge-lite && pnpm lint && cd api && ruff check .`
+  - **forge-lite-docs-update** — Forge Lite Docs Update
+    - Summary: Auto-generate and update README and API documentation.
+    - Owner: launcey-gauge
+    - Command: `cd apps/forge-lite && pnpm docs:generate && cd api && python -c "from main import app; print(app.openapi())" > openapi.json`
 - Members
   - hex-oracle — Forecasting Fiend
     - Brain: local=[ollama], routers=[deepseek-r1]
@@ -182,11 +270,13 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
       - Diátaxis documentation standards
       - PR gate pass rate optimization
     - Tools:
-      - Owned: forge-lite-lint
+      - Owned: forge-lite-lint, forge-lite-docs-update
       - Selection Rules:
         - "run linters" → forge-lite-lint
         - "check code quality" → forge-lite-lint
         - "validate PR" → forge-lite-lint
+        - "update documentation" → forge-lite-docs-update
+        - "generate API docs" → forge-lite-docs-update
     - KPIs: pr_gate_pass_rate, violations_per_kloc
 
 ---

@@ -3,8 +3,9 @@ use std::sync::Arc;
 use tauri::{Emitter, State};
 use tokio::sync::Mutex;
 use futures_util::StreamExt;
+use keyring::Entry;
 
-use crate::config::GoblinsConfig;
+use crate::config::{GoblinsConfig, BrainConfig};
 use crate::cost_tracker::{CostTracker, TaskCost, CostSummary};
 use crate::memory::{MemoryEntry, MemoryStore};
 use crate::orchestration::{OrchestrationParser, OrchestrationPlan};
@@ -19,6 +20,7 @@ pub struct GoblinStatus {
     pub title: String,
     pub status: String,
     pub guild: Option<String>,
+    pub brain: Option<BrainConfig>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -26,6 +28,8 @@ pub struct ExecuteRequest {
     pub goblin: String,
     pub task: String,
     pub streaming: Option<bool>,
+    pub provider: Option<String>,
+    pub model: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -55,7 +59,7 @@ pub struct GoblinRuntime {
 }
 
 impl GoblinRuntime {
-    pub async fn new(db_path: &str, config_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn new(db_path: &str, config_path: &str) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let memory = MemoryStore::new(db_path).await?;
         let config = GoblinsConfig::load_from_file(config_path)?;
 
@@ -74,6 +78,14 @@ impl GoblinRuntime {
                 "openai".to_string(),
                 Box::new(OpenAIProvider::new(api_key, None)),
             );
+        } else {
+            // Try OS keyring
+            if let Ok(k) = Entry::new("goblinos-openai", "api_key").get_password() {
+                providers.insert(
+                    "openai".to_string(),
+                    Box::new(OpenAIProvider::new(k, None)),
+                );
+            }
         }
 
         // Initialize Anthropic if API key is available
@@ -82,6 +94,13 @@ impl GoblinRuntime {
                 "anthropic".to_string(),
                 Box::new(AnthropicProvider::new(api_key, None)),
             );
+        } else {
+            if let Ok(k) = Entry::new("goblinos-anthropic", "api_key").get_password() {
+                providers.insert(
+                    "anthropic".to_string(),
+                    Box::new(AnthropicProvider::new(k, None)),
+                );
+            }
         }
 
         // Initialize Gemini if API key is available
@@ -90,6 +109,13 @@ impl GoblinRuntime {
                 "gemini".to_string(),
                 Box::new(GeminiProvider::new(api_key, None)),
             );
+        } else {
+            if let Ok(k) = Entry::new("goblinos-gemini", "api_key").get_password() {
+                providers.insert(
+                    "gemini".to_string(),
+                    Box::new(GeminiProvider::new(k, None)),
+                );
+            }
         }
 
         let cost_tracker = CostTracker::new();
@@ -102,6 +128,31 @@ impl GoblinRuntime {
         })
     }
 
+    /// Register a provider at runtime (tests / dynamic updates)
+    pub fn register_provider(&mut self, name: &str, provider: Box<dyn ModelProvider>) {
+        self.providers.insert(name.to_string(), provider);
+    }
+
+    /// Collect a streaming response from a provider and return the full string (helper for tests)
+    pub async fn generate_stream_collect(&mut self, provider_name: &str, prompt: &str, model_name: Option<&str>) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+        let provider = self
+            .providers
+            .get(provider_name)
+            .ok_or_else(|| format!("Provider '{}' not found", provider_name))?;
+
+        let mut stream = provider.generate_stream(prompt, None, model_name).await?;
+        let mut full = String::new();
+        while let Some(chunk_res) = stream.next().await {
+            let chunk = chunk_res?;
+            full.push_str(&chunk.content);
+            if chunk.done {
+                break;
+            }
+        }
+
+        Ok(full)
+    }
+
     pub async fn list_goblins(&self) -> Vec<GoblinStatus> {
         self.config
             .get_all_goblins()
@@ -112,6 +163,7 @@ impl GoblinRuntime {
                 title: g.title,
                 status: "idle".to_string(),
                 guild: g.guild,
+                brain: Some(g.brain),
             })
             .collect()
     }
@@ -125,7 +177,8 @@ impl GoblinRuntime {
         goblin: &str,
         task: &str,
         provider_name: Option<&str>,
-    ) -> Result<GoblinResponse, Box<dyn std::error::Error>> {
+        model_name: Option<&str>,
+    ) -> Result<GoblinResponse, Box<dyn std::error::Error + Send + Sync>> {
         let start = std::time::Instant::now();
 
         let provider_name = provider_name.unwrap_or("ollama");
@@ -139,7 +192,10 @@ impl GoblinRuntime {
             goblin
         );
 
-        let response = provider.generate(task, Some(&system_prompt)).await?;
+    // If provider supports model override it will be handled by provider implementation via model_name
+    let response = provider
+        .generate(task, Some(&system_prompt), model_name)
+        .await?;
 
         let duration_ms = start.elapsed().as_millis() as u64;
 
@@ -190,14 +246,14 @@ impl GoblinRuntime {
         &self,
         goblin: &str,
         limit: i32,
-    ) -> Result<Vec<MemoryEntry>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<MemoryEntry>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(self.memory.get_history(goblin, limit).await?)
     }
 
     pub async fn get_stats(
         &self,
         _goblin: &str,
-    ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    ) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
         let cost_summary = self.cost_tracker.get_summary();
 
         Ok(serde_json::json!({
@@ -237,6 +293,48 @@ pub async fn get_providers(
 }
 
 #[tauri::command]
+pub async fn get_provider_models(
+    runtime: State<'_, Arc<Mutex<GoblinRuntime>>>,
+    provider: String,
+) -> Result<Vec<String>, String> {
+    let runtime_lock = runtime.lock().await;
+
+    // If provider exists, attempt to return some sensible defaults or the provider's current model
+    let models = match provider.as_str() {
+        "ollama" => {
+            // For Ollama, prefer the configured model and a common fallback
+            let configured = runtime_lock
+                .providers
+                .get("ollama")
+                .map(|p| p.model_name().to_string());
+            let mut v = Vec::new();
+            if let Some(m) = configured {
+                v.push(m);
+            }
+            v.push("qwen2.5:3b".to_string());
+            v
+        }
+        "openai" => vec![
+            "gpt-4o-mini".to_string(),
+            "gpt-4o".to_string(),
+            "gpt-4o-mini-1".to_string(),
+        ],
+        "anthropic" => vec!["claude-2".to_string(), "claude-instant".to_string()],
+        "gemini" => vec!["gemini-1.5-mini".to_string(), "gemini-1.5-pro".to_string()],
+        other => {
+            // Unknown provider: if present, try to return its model_name, otherwise empty
+            if let Some(p) = runtime_lock.providers.get(other) {
+                vec![p.model_name().to_string()]
+            } else {
+                vec![]
+            }
+        }
+    };
+
+    Ok(models)
+}
+
+#[tauri::command]
 pub async fn execute_task(
     runtime: State<'_, Arc<Mutex<GoblinRuntime>>>,
     app_handle: tauri::AppHandle,
@@ -251,7 +349,12 @@ pub async fn execute_task(
     // Regular execution
     let mut runtime = runtime.lock().await;
     runtime
-        .execute_task(&request.goblin, &request.task, None)
+        .execute_task(
+            &request.goblin,
+            &request.task,
+            request.provider.as_deref(),
+            request.model.as_deref(),
+        )
         .await
         .map_err(|e| e.to_string())
 }
@@ -264,8 +367,8 @@ async fn execute_task_streaming(
     let start = std::time::Instant::now();
     let task_id = uuid::Uuid::new_v4().to_string();
 
-    // Get provider
-    let provider_name = "ollama"; // Default to ollama for now
+    // Get provider (respect request.provider if provided)
+    let provider_name = request.provider.clone().unwrap_or_else(|| "ollama".to_string());
     let mut full_response = String::new();
 
     // Clone necessary data before async block
@@ -276,7 +379,7 @@ async fn execute_task_streaming(
         let runtime_lock = runtime.lock().await;
         let provider = runtime_lock
             .providers
-            .get(provider_name)
+            .get(provider_name.as_str())
             .ok_or_else(|| format!("Provider '{}' not found", provider_name))?;
 
         let system_prompt = format!(
@@ -285,7 +388,7 @@ async fn execute_task_streaming(
         );
 
         let mut stream = provider
-            .generate_stream(&task, Some(&system_prompt))
+            .generate_stream(&task, Some(&system_prompt), request.model.as_deref())
             .await
             .map_err(|e| e.to_string())?;
 
@@ -389,4 +492,87 @@ pub async fn parse_orchestration(
 ) -> Result<OrchestrationPlan, String> {
     let runtime = runtime.lock().await;
     runtime.parse_orchestration(&text, default_goblin.as_deref())
+}
+
+// Secure key storage helpers using OS keychain via `keyring` crate
+#[tauri::command]
+pub async fn store_api_key(provider: String, key: String) -> Result<(), String> {
+    let kr = Entry::new(&format!("goblinos-{}", provider), "api_key");
+    kr.set_password(&key).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_api_key(provider: String) -> Result<Option<String>, String> {
+    let kr = Entry::new(&format!("goblinos-{}", provider), "api_key");
+    match kr.get_password() {
+        Ok(p) => Ok(Some(p)),
+        Err(e) => {
+            // If no entry exists, return None; otherwise bubble up error
+            let msg = e.to_string();
+            if msg.to_lowercase().contains("no entry") || msg.to_lowercase().contains("no such") {
+                Ok(None)
+            } else {
+                Err(msg)
+            }
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn clear_api_key(provider: String) -> Result<(), String> {
+    let kr = Entry::new(&format!("goblinos-{}", provider), "api_key");
+    // Some platforms may return an error if entry does not exist; ignore NotFound-like errors
+    match kr.delete_password() {
+        Ok(()) => Ok(()),
+        Err(e) => {
+            let msg = e.to_string();
+            if msg.to_lowercase().contains("no entry") || msg.to_lowercase().contains("no such") {
+                Ok(())
+            } else {
+                Err(msg)
+            }
+        }
+    }
+}
+
+// Store key and update runtime providers in-memory so UI can use the provider immediately
+#[tauri::command]
+pub async fn set_provider_api_key(
+    runtime: State<'_, Arc<Mutex<GoblinRuntime>>>,
+    provider: String,
+    key: String,
+) -> Result<(), String> {
+    // Persist in keyring
+    let kr = Entry::new(&format!("goblinos-{}", provider), "api_key");
+    kr.set_password(&key).map_err(|e| e.to_string())?;
+
+    // Update runtime providers
+    let mut rt = runtime.lock().await;
+    match provider.as_str() {
+        "openai" => {
+            rt.providers.insert(
+                "openai".to_string(),
+                Box::new(OpenAIProvider::new(key, None)),
+            );
+        }
+        "anthropic" => {
+            rt.providers.insert(
+                "anthropic".to_string(),
+                Box::new(AnthropicProvider::new(key, None)),
+            );
+        }
+        "gemini" => {
+            rt.providers.insert(
+                "gemini".to_string(),
+                Box::new(GeminiProvider::new(key, None)),
+            );
+        }
+        // Ollama is local and doesn't require a key
+        _ => {
+            // Unknown provider: store only
+        }
+    }
+
+    Ok(())
 }

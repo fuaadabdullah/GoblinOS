@@ -20,6 +20,8 @@ pub struct BrainConfig {
     pub local: Option<Vec<String>>,
     pub routers: Option<Vec<String>>,
     pub embeddings: Option<String>,
+    // Optional preferred model/router name for this goblin
+    pub model: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -71,7 +73,7 @@ pub struct SelectionRule {
 }
 
 impl GoblinsConfig {
-    pub fn load_from_file<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn load_from_file<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let content = std::fs::read_to_string(path)?;
         let config: GoblinsConfig = serde_yaml::from_str(&content)?;
         Ok(config)

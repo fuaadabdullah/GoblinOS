@@ -1,0 +1,7 @@
+guilds:
+  - id: test-guild
+    name: Test Guild
+    toolbelt:
+      - id: hello
+        name: Hello Goblin
+        command: echo hello

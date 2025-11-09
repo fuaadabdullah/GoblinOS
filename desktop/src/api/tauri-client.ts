@@ -13,6 +13,8 @@ export interface ExecuteRequest {
 	goblin: string;
 	task: string;
 	streaming?: boolean;
+	provider?: string;
+	model?: string;
 }
 
 export interface GoblinResponse {
@@ -59,8 +61,8 @@ export interface OrchestrationPlan {
 }
 
 export interface StreamEvent {
-	token: string;
-	is_complete: boolean;
+	content: string;
+	done: boolean;
 }
 
 export class TauriRuntimeClient {
@@ -72,13 +74,19 @@ export class TauriRuntimeClient {
 		return invoke("get_providers");
 	}
 
+	async getProviderModels(provider: string): Promise<string[]> {
+		return invoke("get_provider_models", { provider });
+	}
+
 	async executeTask(
 		goblin: string,
 		task: string,
 		streaming = false,
+		provider?: string,
+		model?: string,
 	): Promise<GoblinResponse> {
 		return invoke("execute_task", {
-			request: { goblin, task, streaming },
+			request: { goblin, task, streaming, provider, model },
 		});
 	}
 
@@ -110,27 +118,48 @@ export class TauriRuntimeClient {
 		task: string,
 		onChunk: (chunk: string) => void,
 		onComplete?: (response: GoblinResponse) => void,
+		provider?: string,
+		model?: string,
 	): Promise<void> {
 		// Start streaming execution
-		const responsePromise = this.executeTask(goblin, task, true);
-
-		// Listen for stream events
-		const unlisten = await listen(
-			"stream-token",
-			(event: { payload: StreamEvent }) => {
-				const { token, is_complete } = event.payload;
-				onChunk(token);
-
-				if (is_complete) {
-					unlisten();
-					if (onComplete) {
-						responsePromise.then(onComplete);
-					}
-				}
-			},
+		const responsePromise = this.executeTask(
+			goblin,
+			task,
+			true,
+			provider,
+			model,
 		);
 
+		// Listen for stream events
+		const unlisten = await listen("stream-token", (event: { payload: StreamEvent }) => {
+			const { content, done } = event.payload;
+			onChunk(content);
+
+			if (done) {
+				unlisten();
+				if (onComplete) {
+					responsePromise.then(onComplete);
+				}
+			}
+		});
+
 		return responsePromise.then(() => {}); // Return void, completion handled via events
+	}
+
+	async storeApiKey(provider: string, key: string): Promise<void> {
+		return invoke("store_api_key", { provider, key });
+	}
+
+	async getApiKey(provider: string): Promise<string | null> {
+		return invoke("get_api_key", { provider });
+	}
+
+	async clearApiKey(provider: string): Promise<void> {
+		return invoke("clear_api_key", { provider });
+	}
+
+	async setProviderApiKey(provider: string, key: string): Promise<void> {
+		return invoke("set_provider_api_key", { provider, key });
 	}
 }
 

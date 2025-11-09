@@ -11,6 +11,7 @@
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
 		"generate:roles": "node scripts/generate-roles.js",
+		"generate:roles:check": "node scripts/generate-roles.js && git diff --exit-code docs/ROLES.md SOURCE_OF_TRUTH.md ../.github/copilot-instructions.md",
 		"biome": "biome",
 		"biome:check": "biome check .",
 		"biome:check:verbose": "biome check . --verbose",
