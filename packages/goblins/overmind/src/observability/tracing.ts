@@ -18,19 +18,18 @@ export interface Tracer {
 
 class MockSpan implements Span {
 	private attributes: Record<string, unknown> = {};
-	private status?: { code: number; message?: string };
-	private exception?: Error;
+	// no-op placeholders in this stub implementation
 
 	setAttribute(key: string, value: unknown): void {
 		this.attributes[key] = value;
 	}
 
-	setStatus(status: { code: number; message?: string }): void {
-		this.status = status;
+	setStatus(_status: { code: number; message?: string }): void {
+		// no-op in stub
 	}
 
-	recordException(exception: Error): void {
-		this.exception = exception;
+	recordException(_exception: Error): void {
+		// no-op in stub
 	}
 
 	end(): void {
@@ -40,7 +39,7 @@ class MockSpan implements Span {
 
 class MockTracer implements Tracer {
 	startActiveSpan<T>(
-		name: string,
+		_name: string,
 		fnOrOptions: ((span: Span) => T) | Record<string, unknown>,
 		maybeFn?: (span: Span) => T,
 	): T {
@@ -56,7 +55,7 @@ class MockTracer implements Tracer {
 }
 
 export const trace = {
-	getTracer(name = "overmind"): Tracer {
+	getTracer(_name = "overmind"): Tracer {
 		return new MockTracer();
 	},
 };

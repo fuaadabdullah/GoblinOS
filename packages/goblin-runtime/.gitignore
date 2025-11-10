@@ -1,4 +1,10 @@
-node_modules
+.env
+.env.local
+.env.*.local
+.env.production
+.env.test
+node_modules/
+dist/node_modules
 dist
 .vitest-cache
 *.log

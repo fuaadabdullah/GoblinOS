@@ -1,7 +1,7 @@
 // Short-term memory for recent messages
 
-import type { Memory, ShortTermConfig } from "./types";
-import { MemoryImportance, MemoryType } from "./types";
+import type { Memory, ShortTermConfig } from "./types.js";
+import { MemoryImportance, MemoryType } from "./types.js";
 
 export interface Message {
 	role: "user" | "assistant" | "system";

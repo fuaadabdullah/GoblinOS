@@ -13,6 +13,8 @@ Deploy Overmind AI orchestration system to Kubernetes.
 
 ## Quick Start
 
+> Tip: A helper deployment script is available at `../deploy.sh` (run from `packages/goblins/overmind/`). The script applies manifests in the recommended order and waits for deployments to be available. It still requires properly provisioned secrets (see below).
+
 ### 1. Create namespace
 
 ```bash
@@ -35,7 +37,8 @@ kubectl create secret generic overmind-secrets \
 
 ```bash
 cp k8s/secrets.yaml.example k8s/secrets.yaml
-# Edit k8s/secrets.yaml with your actual keys
+# Edit `k8s/secrets.yaml` with your actual keys. DO NOT commit this file to git.
+# For production, prefer Sealed Secrets or External Secrets Operator instead of applying plaintext secrets.
 kubectl apply -f k8s/secrets.yaml
 ```
 

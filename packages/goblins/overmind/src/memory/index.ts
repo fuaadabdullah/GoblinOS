@@ -1,12 +1,12 @@
 // Memory management system for Overmind
 
-import { LongTermMemory } from "./long-term";
-import { type Message, ShortTermMemory } from "./short-term";
-import type { Memory, MemoryConfig, MemoryImportance } from "./types";
-import { MemoryImportance as ImportanceEnum, MemoryType } from "./types";
-import { WorkingMemory } from "./working";
+import { LongTermMemory } from "./long-term.js";
+import { type Message, ShortTermMemory } from "./short-term.js";
+import type { Memory, MemoryManagerConfig, MemoryImportance } from "./types.js";
+import { MemoryImportance as ImportanceEnum, MemoryType } from "./types.js";
+import { WorkingMemory } from "./working.js";
 
-export * from "./types";
+export * from "./types.js";
 export { ShortTermMemory, WorkingMemory, LongTermMemory };
 
 export interface MemoryManager {
@@ -38,6 +38,15 @@ export interface MemoryManager {
 	}): Promise<
 		Array<{
 			entry: { id: string; content: string; importance: MemoryImportance };
+		}>
+	>;
+	searchByVector(query: string, options?: {
+		topK?: number;
+		minScore?: number;
+	}): Promise<
+		Array<{
+			entry: { id: string; content: string; importance: MemoryImportance };
+			score: number;
 		}>
 	>;
 
@@ -99,13 +108,22 @@ export interface MemoryManager {
 	shutdown(): Promise<void>;
 	consolidate(): Promise<void>;
 
+	// Temporal consolidation workflow methods
+	getShortTermMemories(): Promise<Memory[]>;
+	getWorkingMemories(): Promise<Memory[]>;
+	addToWorkingMemory(content: string, importance?: number, tags?: string[], metadata?: Record<string, unknown>): Promise<void>;
+	addToLongTermMemory(content: string, importance?: number, tags?: string[], metadata?: Record<string, unknown>): Promise<void>;
+	removeFromWorkingMemory(id: string): Promise<void>;
+	removeFromShortTermMemory(id: string): Promise<void>;
+	cleanupMemories(maxAge: string): Promise<number>;
+
 	// Legacy interface (kept for compatibility)
 	addMemory(memory: Memory): Promise<void>;
 	getMemories(options?: { type?: string; limit?: number }): Promise<Memory[]>;
 	close(): Promise<void>;
 }
 
-const DEFAULT_CONFIG: MemoryConfig = {
+const DEFAULT_CONFIG: MemoryManagerConfig = {
 	shortTerm: { maxMessages: 100, ttlSeconds: 3600 },
 	working: { maxEntries: 100, ttlSeconds: 7200 },
 	longTerm: {
@@ -113,6 +131,10 @@ const DEFAULT_CONFIG: MemoryConfig = {
 		dbPath: ":memory:",
 		vectorDbPath: ":memory:",
 		vectorDimensions: 1536,
+		pineconeApiKey: process.env.PINECONE_API_KEY,
+		pineconeIndexName: "overmind-memories",
+		embeddingProvider: "ollama",
+		embeddingModel: "qwen2.5:3b",
 	},
 	entities: { enabled: true, minConfidence: 0.7, maxEntities: 1000 },
 	episodes: {
@@ -122,18 +144,22 @@ const DEFAULT_CONFIG: MemoryConfig = {
 		maxEpisodes: 100,
 	},
 	vectorSearch: {
-		enabled: false,
+		enabled: true,
+		// Use OpenAI text-embedding-3-small (1536-d) by default for vector search so Pinecone index
+		// dimensions match the common default index (1536). This is the safe, non-destructive option.
 		embeddingProvider: "openai",
 		embeddingModel: "text-embedding-3-small",
 		topK: 5,
 		minSimilarity: 0.7,
+		pineconeApiKey: process.env.PINECONE_API_KEY,
+		pineconeIndexName: "overmind-memories",
 	},
 };
 
 export function createMemoryManager(
-	config?: Partial<MemoryConfig>,
+	config?: Partial<MemoryManagerConfig>,
 ): MemoryManager {
-	const merged: MemoryConfig = {
+	const merged: MemoryManagerConfig = {
 		...DEFAULT_CONFIG,
 		...config,
 		shortTerm: { ...DEFAULT_CONFIG.shortTerm, ...(config?.shortTerm || {}) },
@@ -149,7 +175,15 @@ export function createMemoryManager(
 
 	const shortTerm = new ShortTermMemory(merged.shortTerm);
 	const working = new WorkingMemory(merged.working);
-	const longTerm = new LongTermMemory(merged.longTerm);
+	const longTerm = new LongTermMemory({
+		...merged.longTerm,
+		// Do not force vectorDimensions here; let LongTermMemory derive it from the embedding provider
+		vectorDimensions: undefined,
+		pineconeApiKey: merged.vectorSearch.pineconeApiKey || merged.longTerm.pineconeApiKey,
+		pineconeIndexName: merged.vectorSearch.pineconeIndexName || merged.longTerm.pineconeIndexName,
+		embeddingProvider: merged.vectorSearch.embeddingProvider as 'ollama' | 'openai' || merged.longTerm.embeddingProvider,
+		embeddingModel: merged.vectorSearch.embeddingModel || merged.longTerm.embeddingModel,
+	});
 
 	return {
 		// Short-term memory methods
@@ -219,6 +253,17 @@ export function createMemoryManager(
 			const facts = longTerm.searchMemories(options);
 			return facts.map((f) => ({
 				entry: { id: f.id, content: f.content, importance: f.importance },
+			}));
+		},
+
+		async searchByVector(query: string, options?: {
+			topK?: number;
+			minScore?: number;
+		}) {
+			const results = await longTerm.searchMemoriesByVector(query, options);
+			return results.map(({ fact, score }) => ({
+				entry: { id: fact.id, content: fact.content, importance: fact.importance },
+				score,
 			}));
 		},
 
@@ -292,6 +337,94 @@ export function createMemoryManager(
 					await this.storeFact(m.content, { importance: ImportanceEnum.HIGH });
 				}
 			}
+		},
+
+		// Temporal consolidation workflow methods
+		async getShortTermMemories(): Promise<Memory[]> {
+			const messages = shortTerm.getAll();
+			return messages.map((m, index) => ({
+				id: `short-term-${index}`,
+				type: MemoryType.SHORT_TERM,
+				content: m.content,
+				importance: ImportanceEnum.MEDIUM,
+				timestamp: new Date(),
+				metadata: { role: m.role },
+			}));
+		},
+
+		async getWorkingMemories(): Promise<Memory[]> {
+			const entries = working.getAll();
+			return entries.map((entry) => ({
+				id: entry.id,
+				type: MemoryType.WORKING,
+				content: typeof entry.value === 'string' ? entry.value : JSON.stringify(entry.value),
+				importance: entry.importance,
+				timestamp: new Date(entry.timestamp),
+				metadata: { accessCount: entry.accessCount },
+			}));
+		},
+
+		async addToWorkingMemory(content: string, importance = 0.5): Promise<void> {
+			const key = `working-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+			const importanceEnum = importance >= 0.8 ? ImportanceEnum.HIGH :
+				importance >= 0.6 ? ImportanceEnum.MEDIUM : ImportanceEnum.LOW;
+			working.set(key, content, importanceEnum);
+		},
+
+		async addToLongTermMemory(content: string, importance = 0.8, tags: string[] = []): Promise<void> {
+			await longTerm.addMemory({
+				content,
+				type: MemoryType.LONG_TERM,
+				importance: importance >= 0.8 ? ImportanceEnum.HIGH :
+					importance >= 0.6 ? ImportanceEnum.MEDIUM : ImportanceEnum.LOW,
+				accessCount: 0,
+				tags,
+			});
+		},
+
+		async removeFromWorkingMemory(id: string): Promise<void> {
+			working.delete(id);
+		},
+
+		async removeFromShortTermMemory(): Promise<void> {
+			// Short-term memory doesn't support individual removal, so we'll clear it
+			shortTerm.clear();
+		},
+
+		async cleanupMemories(maxAge: string): Promise<number> {
+			// Parse maxAge (e.g., '30d', '7d') and convert to seconds
+			const match = maxAge.match(/^(\d+)([dhms])$/);
+			if (!match) {
+				throw new Error(`Invalid maxAge format: ${maxAge}`);
+			}
+
+			const value = parseInt(match[1]);
+			const unit = match[2];
+			let seconds: number;
+
+			switch (unit) {
+				case 'd': seconds = value * 24 * 60 * 60; break;
+				case 'h': seconds = value * 60 * 60; break;
+				case 'm': seconds = value * 60; break;
+				case 's': seconds = value; break;
+				default: throw new Error(`Invalid time unit: ${unit}`);
+			}
+
+			let cleaned = 0;
+
+			// Clean long-term memories older than cutoff time
+			const longTermMemories = await longTerm.searchMemories({});
+			const cutoffTime = Date.now() - (seconds * 1000);
+
+			for (const memory of longTermMemories) {
+				// Check if memory is older than cutoff (approximate check)
+				if (memory.createdAt < cutoffTime) {
+					longTerm.deleteMemory(memory.id);
+					cleaned++;
+				}
+			}
+
+			return cleaned;
 		},
 
 		getStats() {

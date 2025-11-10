@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { OrchestrationParser } from "../orchestrator";
+import { OrchestrationParser } from "../orchestrator.js";
 
 describe("OrchestrationParser", () => {
 	describe("Sequential Operations (THEN)", () => {
@@ -224,7 +224,7 @@ describe("OrchestrationParser", () => {
 				"websmith",
 			);
 
-			const ids = result.steps.map((s) => s.id);
+			const ids = result.steps.map((s: any) => s.id);
 			const uniqueIds = new Set(ids);
 
 			expect(uniqueIds.size).toBe(ids.length);

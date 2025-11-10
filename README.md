@@ -161,6 +161,13 @@ GoblinOS is hardened with:
 - **[🛡️ PRODUCTION_HARDENING.md](./docs/PRODUCTION_HARDENING.md)** - Deep dive on tooling
 - **[📊 HARDENING_SUMMARY.md](./docs/HARDENING_SUMMARY.md)** - What was implemented
 
+### Test helpers & pointers
+
+The Overmind bridge package contains test helpers for asserting KPI events. See:
+
+- `packages/goblins/overmind/bridge/README.md` — documentation and example test snippet.
+- Example test file: `packages/goblins/overmind/bridge/test/app.test.ts` — shows how to POST `/kpi/event` and assert via the exported `kpiStore.getRecordedEvents()` helper.
+
 ## 🛠️ Development
 
 ### Scripts

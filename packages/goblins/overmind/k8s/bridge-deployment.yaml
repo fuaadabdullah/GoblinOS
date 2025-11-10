@@ -41,6 +41,11 @@ spec:
               name: overmind-secrets
               key: openai_api_key
               optional: true
+        - name: PINECONE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: overmind-secrets
+              key: pinecone_api_key
         - name: OTEL_EXPORTER_OTLP_ENDPOINT
           valueFrom:
             configMapKeyRef:
