@@ -10,7 +10,7 @@ type Overmind = any;
 import axios from "axios";
 import cors from "cors";
 import dotenv from "dotenv";
-import express from "express";
+import express, { type Application } from "express";
 import { pino } from "pino";
 import { pinoHttp } from "pino-http";
 // import { KPIStore } from "./kpi.js";
@@ -38,7 +38,7 @@ const logger = pino({
 	},
 });
 
-const app = express();
+const app: Application = express();
 const host = process.env.OVERMIND_BRIDGE_HOST || "0.0.0.0";
 const port = Number.parseInt(process.env.OVERMIND_BRIDGE_PORT || "3030");
 
@@ -63,7 +63,7 @@ const kpiStore = new MockKPIStore();
 				resetConversation: () => {},
 				getRoutingStats: () => ({ routed: 0 }),
 				rememberFact: async (content: string) => `mock-${Buffer.from(String(content)).toString("hex").slice(0,8)}`,
-				searchMemory: async (q: string, l: number) => [],
+				searchMemory: async (_q: string, _l: number) => [],
 				getMemoryStats: async () => ({ count: 0 }),
 				getShortTermMemories: async () => [],
 				getWorkingMemories: async () => [],
@@ -78,7 +78,7 @@ const kpiStore = new MockKPIStore();
 		} else {
 			// Lazy-import the Overmind runtime to avoid ESM/CJS interop issues during test transforms
 			const mod = await import("@goblinos/overmind");
-			const factory = (mod && (mod.createOvermind || mod.default)) as any;
+			const factory = (mod && mod.createOvermind) as any;
 			if (!factory) throw new Error("createOvermind factory not found in @goblinos/overmind");
 			overmind = factory();
 			logger.info("🧙‍♂️ Overmind initialized successfully");
