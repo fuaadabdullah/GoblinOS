@@ -78,17 +78,32 @@ pnpm --filter @goblinos/overmind-bridge test
 Here's a minimal Vitest example (lifted from the project's `test/app.test.ts`) that shows how to post a KPI event and assert it was recorded by the mock `kpiStore`:
 
 ```ts
-import { expect, it, beforeEach } from 'vitest';
+import { expect, it, beforeAll, beforeEach, afterAll } from 'vitest';
 import fetch from 'node-fetch';
-import { kpiStore } from '../src/index'; // test harness exposes kpiStore
+import { app, kpiStore } from '../src/index';
+
+let server: any;
+let baseUrl = '';
+
+beforeAll(() => {
+    // Start the app on an ephemeral port for the test snippet
+    server = app.listen(0);
+    // @ts-ignore - runtime port available on the server object
+    const port = server.address().port;
+    baseUrl = `http://127.0.0.1:${port}`;
+});
 
 beforeEach(() => {
     kpiStore.clear();
 });
 
+afterAll(() => {
+    server?.close();
+});
+
 it('records KPI event in kpiStore', async () => {
     const payload = { guild: 'forge', goblin: 'orchestrator', kpi: 'chat_requests', value: 2 };
-    const res = await fetch('http://127.0.0.1:0/kpi/event', {
+    const res = await fetch(`${baseUrl}/kpi/event`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
