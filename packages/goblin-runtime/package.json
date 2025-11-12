@@ -41,6 +41,6 @@
 		"@types/ws": "^8.18.1",
 		"@vitest/coverage-v8": "^2.0.0",
 		"typescript": "^5.3.3",
-		"vitest": "^2.0.0"
+		"vitest": "^4.0.8"
 	}
 }

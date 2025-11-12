@@ -60,7 +60,7 @@
 		"jsdom": "^24.0.0",
 		"lefthook": "^1.7.0",
 		"typescript": "^5.6.2",
-		"vitest": "^2.0.5",
+		"vitest": "^4.0.8",
 		"yaml": "^2.8.1"
 	},
 	"workspaces": ["packages/*", "packages/goblins/*"],
