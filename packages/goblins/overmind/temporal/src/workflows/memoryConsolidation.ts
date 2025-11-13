@@ -9,6 +9,7 @@ const {
 	consolidateToWorking,
 	consolidateToLongTerm,
 	cleanupExpiredMemories,
+	generateEmbeddings,
 	notifyConsolidationComplete,
 } = proxyActivities<typeof activities>({
 	startToCloseTimeout: "5 minutes",
@@ -24,6 +25,7 @@ const {
 export interface ConsolidationResult {
 	shortTermConsolidated: number;
 	longTermConsolidated: number;
+	embeddingsGenerated: number;
 	expired: number;
 	timestamp: string;
 	duration: number;
@@ -71,6 +73,17 @@ export async function memoryConsolidation(): Promise<ConsolidationResult> {
 		longTermCount = longTermResults.count;
 	}
 
+	// Step 3.5: Generate embeddings for newly consolidated long-term memories
+	let embeddingsGenerated = 0;
+	if (longTermCount > 0) {
+		await sleep("2s");
+		const embeddingResults = await generateEmbeddings({
+			memories: candidates.workingToLongTerm,
+			embeddingProvider: "ollama", // or "openai" based on config
+		});
+		embeddingsGenerated = embeddingResults.processed;
+	}
+
 	// Add delay before cleanup
 	await sleep("1s");
 
@@ -87,6 +100,7 @@ export async function memoryConsolidation(): Promise<ConsolidationResult> {
 		await notifyConsolidationComplete({
 			shortTermConsolidated: shortTermCount,
 			longTermConsolidated: longTermCount,
+			embeddingsGenerated,
 			expired: cleanupResult.count,
 			duration,
 		});
@@ -95,6 +109,7 @@ export async function memoryConsolidation(): Promise<ConsolidationResult> {
 	return {
 		shortTermConsolidated: shortTermCount,
 		longTermConsolidated: longTermCount,
+		embeddingsGenerated,
 		expired: cleanupResult.count,
 		timestamp: new Date().toISOString(),
 		duration,

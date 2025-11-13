@@ -132,6 +132,16 @@ const PROVIDER_PRICING: Record<
 		inputCostPer1K: 0.0,
 		outputCostPer1K: 0.0,
 	},
+
+	// DeepSeek (third-party hosted provider)
+	"deepseek:default": {
+		inputCostPer1K: 0.002,
+		outputCostPer1K: 0.002,
+	},
+	deepseek: {
+		inputCostPer1K: 0.002,
+		outputCostPer1K: 0.002,
+	},
 };
 
 /**
@@ -297,10 +307,23 @@ export class CostTracker {
 		startDate?: Date;
 		endDate?: Date;
 	}): CostBreakdown {
-		return {
-			...options,
-			summary: this.getSummary(options),
+		// Return a flattened breakdown object: include the requested id (goblinId or guild)
+		// at the top level and spread the summary fields so callers get totalCost,
+		// totalTasks, byProvider, etc. directly (matches existing API expectations
+		// and tests).
+		const summary = this.getSummary(options);
+		const result: any = {
+			...summary,
 		};
+		if (options.goblinId) {
+			result.goblinId = options.goblinId;
+		}
+		if (options.guildId) {
+			// Use `guild` as the public field name in responses (tests expect `guild`).
+			result.guild = options.guildId;
+		}
+
+		return result;
 	}
 
 	/**
@@ -355,9 +378,10 @@ export class CostTracker {
 	 * Export entries as CSV
 	 */
 	exportCSV(): string {
+		// The CSV format is intentionally compact and matches test expectations.
+		// Header: id,goblinId,guild,provider,model,task,inputTokens,outputTokens,totalTokens,cost,duration,success
 		const headers = [
 			"id",
-			"timestamp",
 			"goblinId",
 			"guild",
 			"provider",
@@ -373,18 +397,17 @@ export class CostTracker {
 
 		const rows = this.entries.map((e) => [
 			e.id,
-			e.timestamp.toISOString(),
 			e.goblinId,
 			e.guild,
 			e.provider,
 			e.model,
 			e.task.substring(0, 50), // Truncate long tasks
-			e.tokens.inputTokens,
-			e.tokens.outputTokens,
-			e.tokens.totalTokens,
+			e.tokens.inputTokens.toString(),
+			e.tokens.outputTokens.toString(),
+			e.tokens.totalTokens.toString(),
 			e.cost.toFixed(6),
-			e.duration,
-			e.success,
+			e.duration.toString(),
+			e.success ? "true" : "false",
 		]);
 
 		return [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");

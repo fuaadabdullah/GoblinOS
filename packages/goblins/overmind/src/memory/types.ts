@@ -39,6 +39,10 @@ export interface LongTermConfig {
 	dbPath: string;
 	vectorDbPath: string;
 	vectorDimensions: number;
+	pineconeApiKey?: string;
+	pineconeIndexName?: string;
+	embeddingProvider?: 'ollama' | 'openai';
+	embeddingModel?: string;
 }
 
 export interface EntityConfig {
@@ -60,6 +64,8 @@ export interface VectorSearchConfig {
 	embeddingModel: string;
 	topK: number;
 	minSimilarity: number;
+	pineconeApiKey?: string;
+	pineconeIndexName?: string;
 }
 
 export interface MemoryManagerConfig {

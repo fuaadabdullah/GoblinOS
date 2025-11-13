@@ -1,6 +1,8 @@
-// Long-term memory - persistent storage (in-memory implementation for tests)
+// Long-term memory - persistent storage with vector search
 
-import type { MemoryImportance, MemoryType } from "./types";
+import type { MemoryImportance, MemoryType } from "./types.js";
+import { PineconeAdapter } from "../adapters/pinecone.js";
+import { createEmbeddingProvider, type EmbeddingProvider } from "../providers/embeddings.js";
 
 type Fact = {
 	id: string;
@@ -10,6 +12,7 @@ type Fact = {
 	accessCount: number;
 	tags?: string[];
 	createdAt: number;
+	vectorId?: string; // Reference to vector in Pinecone
 };
 
 type Entity = {
@@ -40,13 +43,60 @@ export class LongTermMemory {
 	private facts = new Map<string, Fact>();
 	private entities = new Map<string, Entity>();
 	private episodes = new Map<string, Episode>();
+	private pineconeAdapter?: PineconeAdapter;
+	private embeddingProvider?: EmbeddingProvider;
 
-	constructor(_config?: {
+	constructor(config?: {
 		enabled?: boolean;
 		dbPath?: string;
 		vectorDbPath?: string;
 		vectorDimensions?: number;
-	}) {}
+		pineconeApiKey?: string;
+		pineconeIndexName?: string;
+		embeddingProvider?: 'ollama' | 'openai';
+		embeddingModel?: string;
+	}) {
+		if (config?.enabled && config.pineconeApiKey && config.pineconeIndexName) {
+			this.initializeVectorSearch({
+				pineconeApiKey: config.pineconeApiKey,
+				pineconeIndexName: config.pineconeIndexName,
+				vectorDimensions: config.vectorDimensions,
+				embeddingProvider: config.embeddingProvider,
+				embeddingModel: config.embeddingModel,
+			});
+		}
+	}
+
+	private async initializeVectorSearch(config: {
+		pineconeApiKey: string;
+		pineconeIndexName: string;
+		vectorDimensions?: number;
+		embeddingProvider?: 'ollama' | 'openai';
+		embeddingModel?: string;
+	}) {
+		try {
+			// Initialize embedding provider
+			const providerType = config.embeddingProvider || 'ollama';
+			const providerConfig = providerType === 'ollama'
+				? { model: config.embeddingModel || 'qwen2.5:3b' }
+				: { apiKey: process.env.OPENAI_API_KEY!, model: config.embeddingModel || 'text-embedding-3-small' };
+
+			this.embeddingProvider = createEmbeddingProvider(providerType, providerConfig);
+
+			// Initialize Pinecone adapter
+			this.pineconeAdapter = new PineconeAdapter({
+				apiKey: config.pineconeApiKey,
+				indexName: config.pineconeIndexName,
+				dimension: config.vectorDimensions || this.embeddingProvider.dimension,
+			});
+
+			await this.pineconeAdapter.initialize();
+			console.log('Vector search initialized for long-term memory');
+		} catch (error) {
+			console.error('Failed to initialize vector search:', error);
+			// Continue without vector search
+		}
+	}
 
 	// Facts (memories)
 	addMemory(input: {
@@ -67,7 +117,42 @@ export class LongTermMemory {
 			createdAt: Date.now(),
 		};
 		this.facts.set(id, fact);
+
+		// Generate and store vector embedding asynchronously
+		if (this.pineconeAdapter && this.embeddingProvider) {
+			this.storeEmbedding(fact).catch(error => {
+				console.error('Failed to store embedding for memory:', id, error);
+			});
+		}
+
 		return id;
+	}
+
+	private async storeEmbedding(fact: Fact): Promise<void> {
+		if (!this.pineconeAdapter || !this.embeddingProvider) return;
+
+		try {
+			const embedding = await this.embeddingProvider.generate(fact.content);
+			const vectorId = `vec_${fact.id}`;
+
+			await this.pineconeAdapter.store([{
+				id: vectorId,
+				values: embedding,
+				metadata: {
+					memoryId: fact.id,
+					content: fact.content,
+					type: fact.type,
+					importance: fact.importance,
+					tags: fact.tags || [],
+					createdAt: fact.createdAt,
+				}
+			}]);
+
+			// Update fact with vector reference
+			fact.vectorId = vectorId;
+		} catch (error) {
+			console.error('Failed to generate/store embedding:', error);
+		}
 	}
 
 	getMemory(id: string): Fact | undefined {
@@ -93,7 +178,59 @@ export class LongTermMemory {
 		return results;
 	}
 
+	/**
+	 * Search memories using vector similarity
+	 */
+	async searchMemoriesByVector(query: string, options?: {
+		topK?: number;
+		minScore?: number;
+		filter?: Record<string, any>;
+	}): Promise<Array<{ fact: Fact; score: number }>> {
+		if (!this.pineconeAdapter || !this.embeddingProvider) {
+			// Fallback to text search if vector search not available
+			const facts = this.searchMemories({ query });
+			return facts.map(fact => ({ fact, score: 0.5 }));
+		}
+
+		try {
+			const queryEmbedding = await this.embeddingProvider.generate(query);
+			const searchResults = await this.pineconeAdapter.search(
+				queryEmbedding,
+				options?.topK || 10,
+				options?.filter
+			);
+
+			const results: Array<{ fact: Fact; score: number }> = [];
+
+			for (const result of searchResults) {
+				if (options?.minScore && result.score < options.minScore) continue;
+
+				const memoryId = result.metadata.memoryId as string;
+				const fact = this.facts.get(memoryId);
+				if (fact) {
+					results.push({ fact, score: result.score });
+				}
+			}
+
+			return results;
+		} catch (error) {
+			console.error('Vector search failed, falling back to text search:', error);
+			const facts = this.searchMemories({ query });
+			return facts.map(fact => ({ fact, score: 0.5 }));
+		}
+	}
+
 	deleteMemory(id: string): boolean {
+		const fact = this.facts.get(id);
+		if (!fact) return false;
+
+		// Delete from vector store if it exists
+		if (fact.vectorId && this.pineconeAdapter) {
+			this.pineconeAdapter.delete([fact.vectorId]).catch(error => {
+				console.error('Failed to delete vector for memory:', id, error);
+			});
+		}
+
 		return this.facts.delete(id);
 	}
 
@@ -205,6 +342,7 @@ export class LongTermMemory {
 			memories: this.facts.size,
 			entities: this.entities.size,
 			episodes: this.episodes.size,
+			vectorSearchEnabled: !!this.pineconeAdapter,
 		};
 	}
 
@@ -215,6 +353,9 @@ export class LongTermMemory {
 	}
 
 	async close(): Promise<void> {
-		// no-op for in-memory
+		if (this.pineconeAdapter) {
+			await this.pineconeAdapter.close();
+		}
+		// no-op for in-memory storage
 	}
 }

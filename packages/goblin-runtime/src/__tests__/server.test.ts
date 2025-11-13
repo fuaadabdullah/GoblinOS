@@ -4,8 +4,7 @@
  * Tests all REST endpoints and orchestration features
  */
 
-import type { Server } from "http";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 const API_BASE_URL = "http://localhost:3001";
 
@@ -18,32 +17,11 @@ interface Goblin {
 	toolbelt: string[];
 }
 
-interface OrchestrationPlan {
-	text: string;
-	steps: Array<{
-		id: string;
-		goblinId: string;
-		task: string;
-		dependencies: string[];
-	}>;
-	metadata: {
-		parallelBatches: number;
-		estimatedDuration: string;
-	};
-}
 
-interface CostSummary {
-	totalCost: number;
-	totalTasks: number;
-	avgCostPerTask: number;
-	byProvider: Record<string, { cost: number; tasks: number }>;
-	byGoblin: Record<string, { cost: number; tasks: number }>;
-	byGuild: Record<string, { cost: number; tasks: number }>;
-}
 
 describe("GoblinOS Runtime Server - Integration Tests", () => {
 	// Helper function to make API requests
-	async function apiRequest(endpoint: string, method = "GET", body?: any) {
+	async function apiRequest(endpoint: string, method = "GET", body?: any): Promise<{ status: number; data: any }>{
 		const options: RequestInit = {
 			method,
 			headers: {
@@ -58,7 +36,7 @@ describe("GoblinOS Runtime Server - Integration Tests", () => {
 		const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
 		return {
 			status: response.status,
-			data: response.ok ? await response.json() : null,
+			data: response.ok ? await response.json().catch(() => null) : null,
 		};
 	}
 

@@ -5,7 +5,7 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { CostTracker } from "../cost-tracker";
+import { CostTracker } from "../cost-tracker.js";
 
 describe("CostTracker", () => {
 	let tracker: CostTracker;
@@ -572,7 +572,7 @@ describe("CostTracker", () => {
 
 			// Should keep only 10000 most recent
 			const csv = tracker.exportCSV();
-			const lines = csv.split("\n").filter((l) => l.trim());
+			const lines = csv.split("\n").filter((l: string) => l.trim());
 			expect(lines.length).toBeLessThanOrEqual(10001); // Header + 10000 rows
 		});
 	});

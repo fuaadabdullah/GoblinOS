@@ -3,13 +3,8 @@
 import type { Ollama } from "ollama";
 // Tracing module (resolved at module load so calls can be synchronous in tests)
 let TRACING: { trace: any; tracingUtils: any };
-try {
-	// Some tests mock this path (without src)
-	TRACING = await import("../../observability/tracing.js");
-} catch {
-	// Fallback to src-relative path for runtime
-	TRACING = await import("../observability/tracing.js");
-}
+// Use src-relative observability stub only (keeps build contained under src/)
+TRACING = await import("../observability/tracing.js");
 
 let ollamaClient: Ollama | null = null;
 
@@ -297,7 +292,7 @@ export interface OllamaProvider {
 	isAvailable(): Promise<boolean>;
 }
 
-export function createOllamaProvider(baseUrl?: string): OllamaProvider {
+export function createOllamaProvider(_baseUrl?: string): OllamaProvider {
 	return {
 		async generate(
 			prompt: string,

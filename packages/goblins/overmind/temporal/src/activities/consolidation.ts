@@ -198,11 +198,47 @@ export async function cleanupExpiredMemories(
 }
 
 /**
+ * Generate embeddings for long-term memories and store in vector database.
+ */
+export async function generateEmbeddings(params: {
+	memories: Memory[];
+	embeddingProvider?: string;
+}): Promise<{ processed: number; failed: number }> {
+	const logger = Context.current().log;
+	logger.info("Generating embeddings for memories", { count: params.memories.length });
+
+	let processed = 0;
+	let failed = 0;
+
+	// Use the memory API to generate embeddings
+	// This assumes the memory service has an endpoint to generate embeddings
+	const embeddingEndpoint = `${MEMORY_API_URL}/api/memory/embeddings`;
+
+	for (const memory of params.memories) {
+		try {
+			await axios.post(embeddingEndpoint, {
+				memoryId: memory.id,
+				content: memory.content,
+				provider: params.embeddingProvider || 'ollama',
+			});
+			processed++;
+		} catch (error) {
+			logger.error(`Failed to generate embedding for memory ${memory.id}`, { error });
+			failed++;
+		}
+	}
+
+	logger.info("Embedding generation complete", { processed, failed });
+	return { processed, failed };
+}
+
+/**
  * Send notification about consolidation completion.
  */
 export async function notifyConsolidationComplete(params: {
 	shortTermConsolidated: number;
 	longTermConsolidated: number;
+	embeddingsGenerated: number;
 	expired: number;
 	duration: number;
 }): Promise<void> {
@@ -211,6 +247,7 @@ export async function notifyConsolidationComplete(params: {
 	logger.info("Consolidation complete", {
 		shortTermConsolidated: params.shortTermConsolidated,
 		longTermConsolidated: params.longTermConsolidated,
+		embeddingsGenerated: params.embeddingsGenerated,
 		expired: params.expired,
 		duration: params.duration,
 	});
@@ -220,7 +257,7 @@ export async function notifyConsolidationComplete(params: {
 	try {
 		const payload = {
 			title: "Consolidation complete",
-			body: `Short: ${params.shortTermConsolidated}, Long: ${params.longTermConsolidated}, Expired: ${params.expired} (duration: ${params.duration}ms)`,
+			body: `Short: ${params.shortTermConsolidated}, Long: ${params.longTermConsolidated}, Embeddings: ${params.embeddingsGenerated}, Expired: ${params.expired} (duration: ${params.duration}ms)`,
 			level: "info",
 		};
 

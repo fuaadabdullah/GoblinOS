@@ -9,6 +9,7 @@ import { AnthropicProvider } from "./providers/anthropic-provider.js";
 import { GeminiProvider } from "./providers/gemini-provider.js";
 import { OllamaProvider } from "./providers/ollama-provider.js";
 import { OpenAIProvider } from "./providers/openai-provider.js";
+import { DeepSeekProvider } from "./providers/deepseek-provider.js";
 import { RAGService } from "./rag-service.js";
 import { sendSignedAudit, type TaskDecisionAuditEvent, type ToolExecutionAuditEvent } from "./audit-client.js";
 import type {
@@ -161,6 +162,22 @@ export class GoblinRuntime {
 				}
 			} catch (error: any) {
 				console.warn(`⚠️  Anthropic initialization failed: ${error.message}`);
+			}
+		}
+
+		// Initialize DeepSeek provider if API key is present
+		if (process.env.DEEPSEEK_API_KEY) {
+			try {
+				const deepseekProvider = new DeepSeekProvider();
+				const deepseekHealthy = await deepseekProvider.checkHealth();
+				if (deepseekHealthy) {
+					this.providers.set("deepseek", deepseekProvider);
+					console.log("✅ DeepSeek provider ready");
+				} else {
+					console.warn("⚠️  DeepSeek health check failed");
+				}
+			} catch (error: any) {
+				console.warn(`⚠️  DeepSeek initialization failed: ${error.message}`);
 			}
 		}
 
@@ -392,17 +409,30 @@ export class GoblinRuntime {
 	private selectProvider(goblin: GoblinConfig): ModelProvider {
 		const brain = goblin.brain;
 
-		// Prefer local models first
+		// If the goblin specifies router order, try to honor it in order
+		if (brain?.routers && Array.isArray(brain.routers) && brain.routers.length > 0) {
+			for (const router of brain.routers) {
+				const key = String(router).toLowerCase();
+				// Direct match
+				if (this.providers.has(key)) return this.providers.get(key)!;
+				// Common aliases
+				if (key === "google" && this.providers.has("gemini")) return this.providers.get("gemini")!;
+				if ((key === "claude" || key === "anthropic") && this.providers.has("anthropic")) return this.providers.get("anthropic")!;
+				if ((key === "local" || key === "ollama") && this.providers.has("ollama")) return this.providers.get("ollama")!;
+			}
+		}
+
+		// Prefer local models if configured
 		if (brain?.local && this.providers.has("ollama")) {
 			return this.providers.get("ollama")!;
 		}
 
-		// Fallback to cloud providers
-		if (brain?.routers?.includes("openai") && this.providers.has("openai")) {
+		// Prefer OpenAI if available
+		if (this.providers.has("openai")) {
 			return this.providers.get("openai")!;
 		}
 
-		// Default to first available
+		// Default to first available provider
 		return this.providers.values().next().value!;
 	}
 
@@ -656,6 +686,7 @@ export { OllamaProvider } from "./providers/ollama-provider.js";
 export { OpenAIProvider } from "./providers/openai-provider.js";
 export { GeminiProvider } from "./providers/gemini-provider.js";
 export { AnthropicProvider } from "./providers/anthropic-provider.js";
+export { DeepSeekProvider } from "./providers/deepseek-provider.js";
 export { RAGService } from "./rag-service.js";
 export * from "./rag/index.js";
 export {

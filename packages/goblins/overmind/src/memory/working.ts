@@ -1,7 +1,7 @@
 // Working memory - key-value store for task context
 
-import type { Memory, WorkingConfig } from "./types";
-import { MemoryImportance, MemoryType } from "./types";
+import type { Memory, WorkingConfig } from "./types.js";
+import { MemoryImportance, MemoryType } from "./types.js";
 
 interface Entry {
 	value: unknown;

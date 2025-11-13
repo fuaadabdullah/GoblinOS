@@ -63,7 +63,10 @@
 		"vitest": "^2.0.5",
 		"yaml": "^2.8.1"
 	},
-	"workspaces": ["packages/*", "packages/goblins/*"],
+	"workspaces": [
+		"packages/*",
+		"packages/goblins/*"
+	],
 	"dependencies": {
 		"@google/generative-ai": "^0.24.1",
 		"@opentelemetry/api": "^1.9.0",
@@ -76,6 +79,11 @@
 		"@opentelemetry/sdk-node": "^0.207.0",
 		"@opentelemetry/sdk-trace-base": "^2.2.0",
 		"@opentelemetry/semantic-conventions": "^1.37.0",
+		"@temporalio/activity": "^1.11.3",
+		"@temporalio/client": "^1.11.3",
+		"@temporalio/worker": "^1.11.3",
+		"@temporalio/workflow": "^1.11.3",
+		"axios": "^1.7.7",
 		"dotenv": "^17.2.3",
 		"ollama": "^0.6.0",
 		"openai": "^6.7.0",

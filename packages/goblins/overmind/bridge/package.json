@@ -8,7 +8,8 @@
 		"dev": "tsx watch src/index.ts",
 		"start": "node dist/index.js",
 		"build": "tsc",
-		"clean": "rm -rf dist"
+		"clean": "rm -rf dist",
+		"test": "OVERMIND_MOCK=1 NODE_ENV=test vitest run"
 	},
 	"dependencies": {
 		"@goblinos/overmind": "file:..",
@@ -25,6 +26,9 @@
 		"@types/cors": "^2.8.17",
 		"@types/node": "^20.11.30",
 		"tsx": "^4.19.1",
-		"typescript": "^5.6.2"
+		"typescript": "^5.6.2",
+		"vitest": "^1.0.0",
+		"supertest": "^6.3.3",
+		"@types/supertest": "^2.0.12"
 	}
 }

@@ -253,9 +253,9 @@ export function createVectorStore(): VectorStore {
 
 // RAG chat (stub)
 export async function ragChat(
-	query: string,
-	store: VectorStore,
-	options?: { k?: number },
+	_query: string,
+	_store: VectorStore,
+	_options?: { k?: number },
 ): Promise<string> {
 	// This would integrate with LLM provider
 	// For now, just a stub
