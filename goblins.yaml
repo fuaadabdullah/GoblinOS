@@ -202,6 +202,11 @@ guilds:
         summary: "LLM routing and memory management goblin for AI-powered trading assistance."
         owner: volt-furnace
         command: echo "Overmind goblin executed via GoblinLoader"
+      - id: tool-layer-service
+        name: Tool Layer Service
+        summary: "Start the secure tool execution service for AI agent orchestration."
+        owner: volt-furnace
+        command: cd GoblinOS/packages/tool-layer && pnpm start
     members:
       - id: vanta-lumin
         title: Glyph Scribe
@@ -282,7 +287,7 @@ guilds:
           - "Idempotency and error budget enforcement"
         kpis: [p99_latency, error_rate, schema_drift]
         tools:
-          owned: [forge-lite-api-dev, forge-lite-db-migrate, forge-lite-rls-check, forge-lite-auth-login, forge-lite-market-data-fetch, forge-lite-export-data, overmind]
+          owned: [forge-lite-api-dev, forge-lite-db-migrate, forge-lite-rls-check, forge-lite-auth-login, forge-lite-market-data-fetch, forge-lite-export-data, overmind, tool-layer-service]
           selection_rules:
             - trigger: "start API server"
               tool: forge-lite-api-dev
@@ -304,6 +309,10 @@ guilds:
               tool: overmind
             - trigger: "LLM routing"
               tool: overmind
+            - trigger: "start tool layer service"
+              tool: tool-layer-service
+            - trigger: "secure tool execution"
+              tool: tool-layer-service
 
   - name: Huntress
     verbosity: normal

@@ -218,6 +218,9 @@ The Overmind bridge package contains test helpers for asserting KPI events. See:
 
 ## 📦 Releasing
 
+### CI / GitHub Actions
+Workflows that run per-package checks (tests, lint, typecheck) live under `.github/workflows/` at the GoblinOS repository root. To keep CI discoverable by GitHub, workflows were moved from package-local `.github/workflows` into `GoblinOS/.github/workflows` and use path-based triggers (e.g. `packages/tool-layer/**`). This ensures package-level tests run when their source changes while still letting us centralize CI in the repo root.
+
 Releases are automated:
 
 1. 📝 Create changeset: `pnpm changeset`
