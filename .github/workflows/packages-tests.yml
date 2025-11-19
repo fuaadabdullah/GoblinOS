@@ -1,0 +1,141 @@
+name: GoblinOS Packages Tests
+
+on:
+  push:
+    paths:
+      - 'packages/**'
+  pull_request:
+    paths:
+      - 'packages/**'
+
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      goblin-runtime: ${{ steps.filter.outputs.goblin-runtime }}
+      overmind: ${{ steps.filter.outputs.overmind }}
+      tool-layer: ${{ steps.filter.outputs.tool-layer }}
+      tool-selector: ${{ steps.filter.outputs.tool-selector }}
+      ingestion-market-data: ${{ steps.filter.outputs.ingestion-market-data }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Filter paths
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            goblin-runtime: 'packages/goblin-runtime/**'
+            overmind: 'packages/goblins/overmind/**'
+            tool-layer: 'packages/tool-layer/**'
+            tool-selector: 'packages/tool-selector/**'
+            ingestion-market-data: 'packages/ingestion-market-data/**'
+
+  goblin-runtime:
+    needs: filter
+    if: needs.filter.outputs.goblin-runtime == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: cd packages/goblin-runtime && pnpm install
+      - name: Run unit tests
+        run: cd packages/goblin-runtime && pnpm test
+      - name: Type check
+        run: cd packages/goblin-runtime && pnpm typecheck
+      - name: Lint
+        run: cd packages/goblin-runtime && pnpm lint
+
+  overmind:
+    needs: filter
+    if: needs.filter.outputs.overmind == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: cd packages/goblins/overmind && pnpm install
+      - name: Run tests
+        run: cd packages/goblins/overmind && pnpm test
+      - name: Type check
+        run: cd packages/goblins/overmind && pnpm typecheck
+      - name: Lint
+        run: cd packages/goblins/overmind && pnpm lint
+
+  tool-layer:
+    needs: filter
+    if: needs.filter.outputs.tool-layer == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: cd packages/tool-layer && pnpm install
+      - name: Run tests
+        run: cd packages/tool-layer && pnpm test
+      - name: Type check
+        run: cd packages/tool-layer && pnpm typecheck
+      - name: Lint
+        run: cd packages/tool-layer && pnpm lint
+
+  tool-selector:
+    needs: filter
+    if: needs.filter.outputs.tool-selector == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: cd packages/tool-selector && pnpm install
+      - name: Run tests
+        run: cd packages/tool-selector && pnpm test
+      - name: Type check
+        run: cd packages/tool-selector && pnpm typecheck
+      - name: Lint
+        run: cd packages/tool-selector && pnpm lint
+
+  ingestion-market-data:
+    needs: filter
+    if: needs.filter.outputs.ingestion-market-data == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: cd packages/ingestion-market-data && pnpm install
+      - name: Run tests
+        run: cd packages/ingestion-market-data && pnpm test
+      - name: Type check
+        run: cd packages/ingestion-market-data && pnpm typecheck
+      - name: Lint
+        run: cd packages/ingestion-market-data && pnpm lint
