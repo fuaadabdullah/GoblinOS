@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Forge Smithy Configuration",
+  "description": "Configuration schema for Forge Smithy Goblin",
+  "type": "object",
+  "properties": {
+    "environment": {
+      "type": "string",
+      "enum": ["development", "production", "testing"],
+      "default": "development",
+      "description": "Environment type for the goblin"
+    },
+    "python_version": {
+      "type": "string",
+      "default": "3.10",
+      "description": "Required Python version"
+    },
+    "uv_version": {
+      "type": ["string", "null"],
+      "description": "Specific uv version to use"
+    },
+    "node_version": {
+      "type": ["string", "null"],
+      "description": "Required Node.js version"
+    },
+    "enable_pre_commit": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable pre-commit hooks setup"
+    },
+    "enable_devcontainer": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable devcontainer setup"
+    },
+    "enable_biome": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable Biome linting"
+    },
+    "enable_ruff": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable Ruff linting"
+    },
+    "enable_mypy": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable MyPy type checking"
+    },
+    "enable_pytest": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable pytest testing"
+    },
+    "custom_dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Additional dependencies to install"
+    },
+    "custom_scripts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {},
+      "description": "Custom scripts to add to package.json"
+    }
+  },
+  "required": ["environment", "python_version"]
+}

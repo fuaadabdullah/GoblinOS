@@ -1,0 +1,154 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "secrets_audit": {
+      "type": "object",
+      "properties": {
+        "scan_paths": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": ["**/.env*", "**/*.config", "**/secrets.*"]
+        },
+        "exclude_patterns": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": ["**/node_modules/**", "**/.git/**", "**/dist/**"]
+        },
+        "secret_patterns": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": [
+            "(?i)(api[_-]?key|apikey)\\s*[=:]\\s*['\"]([^'\"]*)['\"]",
+            "(?i)(password|passwd|pwd)\\s*[=:]\\s*['\"]([^'\"]*)['\"]",
+            "(?i)(token|bearer)\\s*[=:]\\s*['\"]([^'\"]*)['\"]",
+            "(?i)(secret|key)\\s*[=:]\\s*['\"]([^'\"]*)['\"]"
+          ]
+        },
+        "severity_threshold": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"],
+          "default": "medium"
+        }
+      },
+      "required": ["scan_paths", "exclude_patterns", "secret_patterns", "severity_threshold"]
+    },
+    "security_scan": {
+      "type": "object",
+      "properties": {
+        "enabled_checks": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": ["file_permissions", "exposed_ports", "weak_passwords", "outdated_packages"]
+        },
+        "scan_depth": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 3
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 30,
+          "default": 300
+        }
+      },
+      "required": ["enabled_checks", "scan_depth", "timeout_seconds"]
+    },
+    "storage_cleanup": {
+      "type": "object",
+      "properties": {
+        "cleanup_types": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": ["cache", "venv", "logs", "temp"]
+        },
+        "max_age_days": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 30
+        },
+        "size_threshold_mb": {
+          "type": "integer",
+          "minimum": 10,
+          "default": 100
+        },
+        "preserve_paths": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": []
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": ["cleanup_types", "max_age_days", "size_threshold_mb", "preserve_paths", "dry_run"]
+    },
+    "disk_consolidation": {
+      "type": "object",
+      "properties": {
+        "target_directory": {
+          "type": "string",
+          "default": "./archives"
+        },
+        "compression_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "max_file_age_days": {
+          "type": "integer",
+          "minimum": 7,
+          "default": 90
+        },
+        "consolidation_batch_size": {
+          "type": "integer",
+          "minimum": 10,
+          "default": 100
+        }
+      },
+      "required": ["target_directory", "compression_enabled", "max_file_age_days", "consolidation_batch_size"]
+    },
+    "system_clean": {
+      "type": "object",
+      "properties": {
+        "clean_system_cache": {
+          "type": "boolean",
+          "default": true
+        },
+        "clean_user_cache": {
+          "type": "boolean",
+          "default": true
+        },
+        "clean_application_cache": {
+          "type": "boolean",
+          "default": true
+        },
+        "preserve_recent": {
+          "type": "boolean",
+          "default": true
+        },
+        "recent_threshold_days": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 7
+        }
+      },
+      "required": ["clean_system_cache", "clean_user_cache", "clean_application_cache", "preserve_recent", "recent_threshold_days"]
+    },
+    "enable_telemetry": {
+      "type": "boolean",
+      "default": true
+    },
+    "log_level": {
+      "type": "string",
+      "enum": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+      "default": "INFO"
+    },
+    "workspace_root": {
+      "type": ["string", "null"],
+      "default": null
+    }
+  },
+  "required": ["secrets_audit", "security_scan", "storage_cleanup", "disk_consolidation", "system_clean", "enable_telemetry", "log_level"]
+}

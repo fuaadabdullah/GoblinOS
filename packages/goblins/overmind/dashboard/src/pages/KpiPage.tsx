@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import React, { useMemo, useState } from "react";
+import { useState } from "react";
 import {
 	Bar,
 	BarChart,
@@ -11,6 +11,7 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import "./pages.css";
 
 const BRIDGE =
 	(import.meta as any).env?.VITE_BRIDGE_URL || "http://localhost:3030";
@@ -60,10 +61,6 @@ export function KpiPage() {
 		queryFn: () => fetchSummary(hours, guild, goblin),
 		refetchInterval: 30_000,
 	});
-	const seriesQs = (selectedKpis.length ? selectedKpis : []).map((kpi) => ({
-		kpi,
-	}));
-	const seriesData = [] as { kpi: string; points: any[] }[];
 	// naive data fetching loop (keeps code simple without useQueries)
 	// Triggered within render via useQuery when keys change
 	const seriesResults = selectedKpis.map((kpi) =>
@@ -89,15 +86,6 @@ export function KpiPage() {
 		success: Number(d.success_count || 0),
 		avg_duration: Number(d.avg_duration || 0),
 	}));
-	const series =
-		seriesData.length > 0
-			? seriesData[0].points.map((p: any) => ({
-					bucket: new Date(Number(p.bucket)).toLocaleString(),
-					count: Number(p.count || 0),
-					avg: Number(p.avg_value || 0),
-				}))
-			: [];
-
 	const guilds: string[] = metaQ.data?.guilds || [];
 	const goblins: { goblin: string; guild: string }[] =
 		metaQ.data?.goblins || [];
@@ -105,22 +93,15 @@ export function KpiPage() {
 	const filteredGoblins = goblins.filter((g) => !guild || g.guild === guild);
 
 	return (
-		<div style={{ display: "grid", gap: 24 }}>
+		<div className="page-grid">
 			<div>
-				<div
-					style={{
-						display: "flex",
-						gap: 12,
-						alignItems: "center",
-						marginBottom: 12,
-					}}
-				>
+				<div className="controls-row">
 					<label>
 						Hours:
 						<select
 							value={hours}
 							onChange={(e) => setHours(Number(e.target.value))}
-							style={{ marginLeft: 6 }}
+							className="ml-6"
 						>
 							{[6, 24, 72, 168].map((h) => (
 								<option key={h} value={h}>
@@ -134,7 +115,7 @@ export function KpiPage() {
 						<select
 							value={guild || ""}
 							onChange={(e) => setGuild(e.target.value || undefined)}
-							style={{ marginLeft: 6 }}
+							className="ml-6"
 						>
 							<option value="">All</option>
 							{guilds.map((g) => (
@@ -149,7 +130,7 @@ export function KpiPage() {
 						<select
 							value={goblin || ""}
 							onChange={(e) => setGoblin(e.target.value || undefined)}
-							style={{ marginLeft: 6 }}
+							className="ml-6"
 						>
 							<option value="">All</option>
 							{filteredGoblins.map((gg) => (
@@ -169,7 +150,7 @@ export function KpiPage() {
 									Array.from(e.target.selectedOptions).map((o) => o.value),
 								)
 							}
-							style={{ marginLeft: 6, minWidth: 180, height: 80 }}
+							className="multi-select"
 						>
 							{kpiOptions.map((k) => (
 								<option key={k} value={k}>
@@ -178,21 +159,12 @@ export function KpiPage() {
 							))}
 						</select>
 					</label>
-					<button
-						onClick={() => refetch()}
-						style={{ padding: "6px 12px", border: "1px solid #ddd" }}
-					>
+					<button onClick={() => refetch()} className="btn-refresh">
 						Refresh
 					</button>
 				</div>
-				<h2 style={{ fontWeight: 600, marginBottom: 8 }}>Top KPIs (24h)</h2>
-				<div
-					style={{
-						height: 280,
-						background: "#fafafa",
-						border: "1px solid #eee",
-					}}
-				>
+				<h2 className="heading-strong">Top KPIs (24h)</h2>
+				<div className="card card-large">
 					<ResponsiveContainer width="100%" height="100%">
 						<BarChart
 							data={kpis}
@@ -216,14 +188,8 @@ export function KpiPage() {
 			</div>
 
 			<div>
-				<h2 style={{ fontWeight: 600, marginBottom: 8 }}>Tool Usage (24h)</h2>
-				<div
-					style={{
-						height: 280,
-						background: "#fafafa",
-						border: "1px solid #eee",
-					}}
-				>
+				<h2 className="heading-strong">Tool Usage (24h)</h2>
+				<div className="card card-large">
 					<ResponsiveContainer width="100%" height="100%">
 						<BarChart
 							data={tools}
@@ -247,28 +213,13 @@ export function KpiPage() {
 			</div>
 
 			<div>
-				<h2 style={{ fontWeight: 600, marginBottom: 8 }}>KPI Trend</h2>
+				<h2 className="heading-strong">KPI Trend</h2>
 				{selectedKpis.length ? (
-					<div
-						style={{
-							height: 320,
-							background: "#fafafa",
-							border: "1px solid #eee",
-							paddingTop: 4,
-						}}
-					>
+					<div className="card card-xlarge">
 						<ResponsiveContainer width="100%" height="100%">
 							<LineChart
 								data={(() => {
 									const bucketMap = new Map<string, any>();
-									const palette = [
-										"#ef4444",
-										"#3b82f6",
-										"#10b981",
-										"#f59e0b",
-										"#8b5cf6",
-										"#06b6d4",
-									];
 									seriesResults.forEach((qr, idx) => {
 										if (!qr.data?.points) return;
 										const series = qr.data.points as any[];

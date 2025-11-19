@@ -13,6 +13,7 @@ dependencies = [
   "pyyaml>=6.0",
   "pytest>=8.4.2",
   "pytest-asyncio>=0.23",
+  "goblinos-shared>=0.1.0",
 ]
 
 [project.optional-dependencies]
@@ -21,12 +22,7 @@ dependencies = [
 #   "langgraph>=0.0.40",
 #   "langchain>=0.1.0",
 # ]
-dev = [
-  "pytest>=8",
-  "pytest-asyncio>=0.23",
-  "mypy>=1.11",
-  "nox>=2024.4",
-]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "mypy>=1.11", "nox>=2024.4"]
 
 [project.scripts]
 smithy = "smithy.cli:app"
@@ -34,9 +30,12 @@ smithy = "smithy.cli:app"
 [tool.uv]
 package = true
 
+[tool.uv.sources]
+goblinos-shared = { path = "../shared-python", editable = true }
+
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["smithy*"]
+include = ["smithy*", "src"]
 exclude = ["sample_policies", "compliance_reports"]
 
 [tool.ruff]
@@ -58,7 +57,4 @@ warn_unreachable = true
 strict_equality = true
 
 [dependency-groups]
-dev = [
-    "cosmic-ray>=8.4.3",
-    "pytest>=8.4.2",
-]
+dev = ["cosmic-ray>=8.4.3", "pytest>=8.4.2"]

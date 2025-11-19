@@ -1,0 +1,5 @@
+{
+	"ensurePnpm": true,
+	"requiredNode": "18",
+	"setupGitHooks": true
+}

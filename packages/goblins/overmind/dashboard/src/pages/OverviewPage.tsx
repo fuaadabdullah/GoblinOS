@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import React, { useMemo, useState } from "react";
+import { useState } from "react";
 import {
 	Bar,
 	BarChart,
@@ -11,6 +11,7 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import "./pages.css";
 import { getGuildColor } from "../theme";
 
 const BRIDGE =
@@ -75,15 +76,15 @@ export function OverviewPage() {
 	}));
 
 	return (
-		<div style={{ display: "grid", gap: 24 }}>
-			<div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-				<h2 style={{ fontWeight: 700, margin: 0 }}>Overview</h2>
+		<div className="page-grid">
+			<div className="page-flex-row">
+				<h2 className="app-title">Overview</h2>
 				<label>
 					Hours:
 					<select
 						value={hours}
 						onChange={(e) => setHours(Number(e.target.value))}
-						style={{ marginLeft: 6 }}
+						className="ml-6"
 					>
 						{[6, 24, 72, 168].map((h) => (
 							<option key={h} value={h}>
@@ -95,14 +96,8 @@ export function OverviewPage() {
 			</div>
 
 			<div>
-				<h3 style={{ fontWeight: 600, marginBottom: 8 }}>Top KPIs</h3>
-				<div
-					style={{
-						height: 240,
-						background: "#fafafa",
-						border: "1px solid #eee",
-					}}
-				>
+				<h3 className="heading-strong">Top KPIs</h3>
+				<div className="card card-medium">
 					<ResponsiveContainer width="100%" height="100%">
 						<BarChart
 							data={kpis}
@@ -130,14 +125,8 @@ export function OverviewPage() {
 			</div>
 
 			<div>
-				<h3 style={{ fontWeight: 600, marginBottom: 8 }}>Top Tools</h3>
-				<div
-					style={{
-						height: 240,
-						background: "#fafafa",
-						border: "1px solid #eee",
-					}}
-				>
+				<h3 className="heading-strong">Top Tools</h3>
+				<div className="card card-medium">
 					<ResponsiveContainer width="100%" height="100%">
 						<BarChart
 							data={tools}
@@ -165,16 +154,8 @@ export function OverviewPage() {
 			</div>
 
 			<div>
-				<h3 style={{ fontWeight: 600, marginBottom: 8 }}>
-					Tool Invocations Trend
-				</h3>
-				<div
-					style={{
-						height: 280,
-						background: "#fafafa",
-						border: "1px solid #eee",
-					}}
-				>
+				<h3 className="heading-strong">Tool Invocations Trend</h3>
+				<div className="card card-large">
 					<ResponsiveContainer width="100%" height="100%">
 						<LineChart
 							data={toolSeries}
@@ -205,78 +186,28 @@ export function OverviewPage() {
 			</div>
 
 			<div>
-				<h3 style={{ fontWeight: 600, marginBottom: 8 }}>Last 5 Events</h3>
-				<div style={{ overflowX: "auto" }}>
-					<table style={{ width: "100%", borderCollapse: "collapse" }}>
+				<h3 className="heading-strong">Last 5 Events</h3>
+				<div className="table-responsive">
+					<table className="table-full">
 						<thead>
 							<tr>
-								<th
-									style={{
-										textAlign: "left",
-										borderBottom: "1px solid #eee",
-										padding: 6,
-									}}
-								>
-									Time
-								</th>
-								<th
-									style={{
-										textAlign: "left",
-										borderBottom: "1px solid #eee",
-										padding: 6,
-									}}
-								>
-									Type
-								</th>
-								<th
-									style={{
-										textAlign: "left",
-										borderBottom: "1px solid #eee",
-										padding: 6,
-									}}
-								>
-									Guild
-								</th>
-								<th
-									style={{
-										textAlign: "left",
-										borderBottom: "1px solid #eee",
-										padding: 6,
-									}}
-								>
-									Goblin
-								</th>
-								<th
-									style={{
-										textAlign: "left",
-										borderBottom: "1px solid #eee",
-										padding: 6,
-									}}
-								>
-									Item
-								</th>
-								<th
-									style={{
-										textAlign: "left",
-										borderBottom: "1px solid #eee",
-										padding: 6,
-									}}
-								>
-									Info
-								</th>
+								<th>Time</th>
+								<th>Type</th>
+								<th>Guild</th>
+								<th>Goblin</th>
+								<th>Item</th>
+								<th>Info</th>
 							</tr>
 						</thead>
 						<tbody>
 							{(recentQ.data?.events || []).map((e: any, i: number) => (
 								<tr key={i}>
-									<td style={{ padding: 6 }}>
-										{new Date(Number(e.ts)).toLocaleString()}
-									</td>
-									<td style={{ padding: 6 }}>{e.type}</td>
-									<td style={{ padding: 6 }}>{e.guild || ""}</td>
-									<td style={{ padding: 6 }}>{e.goblin || ""}</td>
-									<td style={{ padding: 6 }}>{e.item}</td>
-									<td style={{ padding: 6 }}>
+									<td>{new Date(Number(e.ts)).toLocaleString()}</td>
+									<td>{e.type}</td>
+									<td>{e.guild || ""}</td>
+									<td>{e.goblin || ""}</td>
+									<td>{e.item}</td>
+									<td>
 										{e.type === "kpi"
 											? `value=${e.value ?? ""} source=${e.meta ?? ""}`
 											: `success=${e.success ? "yes" : "no"} duration=${e.duration_ms ?? ""}ms reason=${e.meta ?? ""}`}

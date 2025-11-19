@@ -1,6 +1,8 @@
 import { createServer } from "http";
 import cors from "cors";
 import express from "express";
+import rateLimit from "express-rate-limit";
+import jwt from "jsonwebtoken";
 import { type WebSocket, WebSocketServer } from "ws";
 import { CostTracker } from "./cost-tracker.js";
 import { GoblinRuntime } from "./index.js";
@@ -18,6 +20,46 @@ const wss = new WebSocketServer({ server, path: "/ws" });
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Configuration
+const AUTH_ENABLED = process.env.AUTH_ENABLED === "true";
+const JWT_SECRET = process.env.JWT_SECRET || "dev-local-secret";
+const AUTH_USER = process.env.DASHBOARD_USER || "admin";
+const AUTH_PASS = process.env.DASHBOARD_PASS || "admin";
+
+// Rate limiter (applies to /api)
+const apiRateLimiter = rateLimit({
+	windowMs: 60_000, // 1 minute
+	max: Number(process.env.API_RATE_LIMIT || 100),
+	standardHeaders: true,
+	legacyHeaders: false,
+});
+app.use("/api", apiRateLimiter);
+
+// Auth middleware - verifies JWT when enabled
+function authMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
+	// Allow health & login without auth
+	if (req.path.startsWith("/health") || req.path.startsWith("/auth")) {
+		return next();
+	}
+
+	if (!AUTH_ENABLED) return next();
+
+	const header = (req.headers.authorization || "").toString();
+	const token = header.startsWith("Bearer ") ? header.slice(7) : header;
+	if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+	try {
+		const payload = jwt.verify(token, JWT_SECRET);
+		(req as any).user = payload;
+		return next();
+	} catch (err) {
+		return res.status(401).json({ error: "Invalid token" });
+	}
+}
+
+// Apply auth middleware for API routes
+app.use("/api", authMiddleware);
 
 // Initialize runtime
 const runtime = new GoblinRuntime();
@@ -146,6 +188,31 @@ app.post("/api/orchestrate/parse", async (req, res) => {
 			error.message?.includes("Invalid orchestration syntax");
 		res.status(isValidationError ? 400 : 500).json({ error: error.message });
 	}
+});
+
+/**
+ * POST /api/auth/login
+ * Body: { username, password }
+ * Returns: { token }
+ */
+app.post("/api/auth/login", async (req, res) => {
+	const { username, password } = req.body || {};
+	// If auth is disabled, allow any login and return a token for convenience
+	if (!AUTH_ENABLED) {
+		const token = jwt.sign({ username: username || AUTH_USER }, JWT_SECRET, { expiresIn: "8h" });
+		return res.json({ token });
+	}
+
+	if (!username || !password) {
+		return res.status(400).json({ error: "Missing username or password" });
+	}
+
+	if (username === AUTH_USER && password === AUTH_PASS) {
+		const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: "8h" });
+		return res.json({ token });
+	}
+
+	return res.status(401).json({ error: "Invalid credentials" });
 });
 
 /**
@@ -426,6 +493,7 @@ server.listen(PORT, () => {
 	console.log(`  GET  /api/history/:goblin`);
 	console.log(`  GET  /api/stats/:goblin`);
 	console.log(`  GET  /api/health`);
+	console.log(`  POST /api/auth/login`);
 	console.log("");
 	console.log("Orchestration endpoints:");
 	console.log(`  POST /api/orchestrate/parse`);

@@ -1,247 +1,57 @@
-/**
- * StatsPanel - Display goblin performance metrics
- *
- * Features:
- * - Total tasks, success rate, avg duration
- * - Visual indicators and progress bars
- * - Auto-refresh on task completion
- */
-import { useEffect, useState } from "react";
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-export function StatsPanel({ client, goblinId, refreshTrigger = 0 }) {
-	const [stats, setStats] = useState(null);
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState(null);
-	useEffect(() => {
-		if (!goblinId) {
-			setStats(null);
-			return;
-		}
-		const fetchStats = async () => {
-			setLoading(true);
-			setError(null);
-			try {
-				const data = await client.getStats(goblinId);
-				setStats(data);
-			} catch (err) {
-				setError(err.message || "Failed to fetch stats");
-			} finally {
-				setLoading(false);
-			}
-		};
-		fetchStats();
-	}, [goblinId, refreshTrigger, client]);
-	if (!goblinId) {
-		return _jsxs("div", {
-			className: "stats-panel",
-			children: [
-				_jsx("div", {
-					className: "stats-header",
-					children: _jsx("h3", { children: "Performance Stats" }),
-				}),
-				_jsxs("div", {
-					className: "stats-empty",
-					children: [
-						_jsx("div", { className: "empty-icon", children: "\uD83D\uDCCA" }),
-						_jsx("p", { children: "Select a goblin to view stats" }),
-					],
-				}),
-			],
-		});
-	}
-	if (loading && !stats) {
-		return _jsxs("div", {
-			className: "stats-panel",
-			children: [
-				_jsx("div", {
-					className: "stats-header",
-					children: _jsx("h3", { children: "Performance Stats" }),
-				}),
-				_jsxs("div", {
-					className: "stats-loading",
-					children: [
-						_jsx("div", { className: "spinner" }),
-						_jsx("p", { children: "Loading stats..." }),
-					],
-				}),
-			],
-		});
-	}
-	if (error) {
-		return _jsxs("div", {
-			className: "stats-panel",
-			children: [
-				_jsx("div", {
-					className: "stats-header",
-					children: _jsx("h3", { children: "Performance Stats" }),
-				}),
-				_jsxs("div", {
-					className: "stats-error",
-					children: [
-						_jsx("span", { children: "\u274C" }),
-						_jsx("p", { children: error }),
-					],
-				}),
-			],
-		});
-	}
-	if (!stats) return null;
-	return _jsxs("div", {
-		className: "stats-panel",
-		children: [
-			_jsxs("div", {
-				className: "stats-header",
-				children: [
-					_jsx("h3", { children: "Performance Stats" }),
-					loading &&
-						_jsx("span", {
-							className: "refresh-indicator animate-pulse",
-							children: "\u25CF",
-						}),
-				],
-			}),
-			_jsxs("div", {
-				className: "stats-grid",
-				children: [
-					_jsxs("div", {
-						className: "stat-card",
-						children: [
-							_jsx("div", { className: "stat-icon", children: "\uD83D\uDCDD" }),
-							_jsxs("div", {
-								className: "stat-content",
-								children: [
-									_jsx("div", {
-										className: "stat-label",
-										children: "Total Tasks",
-									}),
-									_jsx("div", {
-										className: "stat-value",
-										children: stats.totalTasks,
-									}),
-								],
-							}),
-						],
-					}),
-					_jsxs("div", {
-						className: "stat-card",
-						children: [
-							_jsx("div", { className: "stat-icon", children: "\u2705" }),
-							_jsxs("div", {
-								className: "stat-content",
-								children: [
-									_jsx("div", {
-										className: "stat-label",
-										children: "Success Rate",
-									}),
-									_jsxs("div", {
-										className: "stat-value",
-										children: [stats.successRate.toFixed(1), "%"],
-									}),
-								],
-							}),
-							_jsx("div", {
-								className: "stat-progress",
-								children: _jsx("div", {
-									className: "progress-bar",
-									style: { width: `${stats.successRate}%` },
-								}),
-							}),
-						],
-					}),
-					_jsxs("div", {
-						className: "stat-card",
-						children: [
-							_jsx("div", { className: "stat-icon", children: "\u26A1" }),
-							_jsxs("div", {
-								className: "stat-content",
-								children: [
-									_jsx("div", {
-										className: "stat-label",
-										children: "Avg Duration",
-									}),
-									_jsx("div", {
-										className: "stat-value",
-										children: formatDuration(stats.avgDuration),
-									}),
-								],
-							}),
-						],
-					}),
-					_jsx("div", {
-						className: "stat-card stat-mini",
-						children: _jsxs("div", {
-							className: "stat-mini-content",
-							children: [
-								_jsx("span", {
-									className: "text-accent",
-									children: stats.successfulTasks,
-								}),
-								_jsx("span", {
-									className: "text-muted",
-									children: "successful",
-								}),
-							],
-						}),
-					}),
-					_jsx("div", {
-						className: "stat-card stat-mini",
-						children: _jsxs("div", {
-							className: "stat-mini-content",
-							children: [
-								_jsx("span", {
-									className: "stat-mini-value-error",
-									children: stats.failedTasks,
-								}),
-								_jsx("span", { className: "text-muted", children: "failed" }),
-							],
-						}),
-					}),
-				],
-			}),
-			stats.totalTasks > 0 &&
-				_jsxs("div", {
-					className: "stats-summary",
-					children: [
-						_jsx("div", {
-							className: "summary-title",
-							children: "Performance",
-						}),
-						_jsxs("div", {
-							className: "summary-badges",
-							children: [
-								stats.successRate >= 90 &&
-									_jsx("span", {
-										className: "badge badge-success",
-										children: "Excellent",
-									}),
-								stats.successRate >= 70 &&
-									stats.successRate < 90 &&
-									_jsx("span", {
-										className: "badge badge-info",
-										children: "Good",
-									}),
-								stats.successRate < 70 &&
-									_jsx("span", {
-										className: "badge badge-warning",
-										children: "Needs Attention",
-									}),
-								stats.avgDuration < 5000 &&
-									_jsx("span", {
-										className: "badge badge-success",
-										children: "Fast",
-									}),
-							],
-						}),
-					],
-				}),
-		],
-	});
+export { default } from "./StatsPanel";
+export * from "./StatsPanel";
+
+// Thin wrapper re-exporting the TSX implementation of StatsPanel
+export { default } from "./StatsPanel";
+export * from "./StatsPanel";
+
+// Thin wrapper re-exporting the TSX implementation of StatsPanel
+export { default } from "./StatsPanel";
+export * from "./StatsPanel";
+
+// Thin wrapper re-exporting the TSX implementation of StatsPanel
+    const [error, setError] = useState(null);
+    useEffect(() => {
+        if (!goblinId) {
+            setStats(null);
+            return;
+        }
+        const fetchStats = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const data = await client.getStats(goblinId);
+                setStats(data);
+            }
+            catch (err) {
+                setError(err.message || "Failed to fetch stats");
+            }
+            finally {
+                setLoading(false);
+            }
+        };
+        fetchStats();
+    }, [goblinId, refreshTrigger, client]);
+    if (!goblinId) {
+        return (_jsxs("div", { className: "stats-panel", children: [_jsx("div", { className: "stats-header", children: _jsx("h3", { children: "Performance Stats" }) }), _jsxs("div", { className: "stats-empty", children: [_jsx("div", { className: "empty-icon", children: "\uD83D\uDCCA" }), _jsx("p", { children: "Select a goblin to view stats" })] })] }));
+    }
+    if (loading && !stats) {
+        return (_jsxs("div", { className: "stats-panel", children: [_jsx("div", { className: "stats-header", children: _jsx("h3", { children: "Performance Stats" }) }), _jsxs("div", { className: "stats-loading", children: [_jsx("div", { className: "spinner" }), _jsx("p", { children: "Loading stats..." })] })] }));
+    }
+    if (error) {
+        return (_jsxs("div", { className: "stats-panel", children: [_jsx("div", { className: "stats-header", children: _jsx("h3", { children: "Performance Stats" }) }), _jsxs("div", { className: "stats-error", children: [_jsx("span", { children: "\u274C" }), _jsx("p", { children: error })] })] }));
+    }
+    if (!stats)
+        return null;
+    return (_jsxs("div", { className: "stats-panel", children: [_jsxs("div", { className: "stats-header", children: [_jsx("h3", { children: "Performance Stats" }), loading && _jsx("span", { className: "refresh-indicator animate-pulse", children: "\u25CF" })] }), _jsxs("div", { className: "stats-grid", children: [_jsxs("div", { className: "stat-card", children: [_jsx("div", { className: "stat-icon", children: "\uD83D\uDCDD" }), _jsxs("div", { className: "stat-content", children: [_jsx("div", { className: "stat-label", children: "Total Tasks" }), _jsx("div", { className: "stat-value", children: stats.totalTasks })] })] }), _jsxs("div", { className: "stat-card", children: [_jsx("div", { className: "stat-icon", children: "\u2705" }), _jsxs("div", { className: "stat-content", children: [_jsx("div", { className: "stat-label", children: "Success Rate" }), _jsxs("div", { className: "stat-value", children: [stats.successRate.toFixed(1), "%"] })] }), _jsx("div", { className: "stat-progress", children: _jsx("div", { className: "progress-bar", style: { width: `${stats.successRate}%` } }) })] }), _jsxs("div", { className: "stat-card", children: [_jsx("div", { className: "stat-icon", children: "\u26A1" }), _jsxs("div", { className: "stat-content", children: [_jsx("div", { className: "stat-label", children: "Avg Duration" }), _jsx("div", { className: "stat-value", children: formatDuration(stats.avgDuration) })] })] }), _jsx("div", { className: "stat-card stat-mini", children: _jsxs("div", { className: "stat-mini-content", children: [_jsx("span", { className: "text-accent", children: stats.successfulTasks }), _jsx("span", { className: "text-muted", children: "successful" })] }) }), _jsx("div", { className: "stat-card stat-mini", children: _jsxs("div", { className: "stat-mini-content", children: [_jsx("span", { className: "stat-mini-value-error", children: stats.failedTasks }), _jsx("span", { className: "text-muted", children: "failed" })] }) })] }), stats.totalTasks > 0 && (_jsxs("div", { className: "stats-summary", children: [_jsx("div", { className: "summary-title", children: "Performance" }), _jsxs("div", { className: "summary-badges", children: [stats.successRate >= 90 && (_jsx("span", { className: "badge badge-success", children: "Excellent" })), stats.successRate >= 70 && stats.successRate < 90 && (_jsx("span", { className: "badge badge-info", children: "Good" })), stats.successRate < 70 && (_jsx("span", { className: "badge badge-warning", children: "Needs Attention" })), stats.avgDuration < 5000 && (_jsx("span", { className: "badge badge-success", children: "Fast" }))] })] }))] }));
 }
 // Helper function to format duration
 function formatDuration(ms) {
-	if (ms < 1000) return `${Math.round(ms)}ms`;
-	if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
-	return `${(ms / 60000).toFixed(1)}m`;
+    if (ms < 1000)
+        return `${Math.round(ms)}ms`;
+    if (ms < 60000)
+        return `${(ms / 1000).toFixed(1)}s`;
+    return `${(ms / 60000).toFixed(1)}m`;
 }
 /* ============================================================================
  * Styles
@@ -422,7 +232,7 @@ const styles = `
 `;
 // Inject styles
 if (typeof document !== "undefined") {
-	const styleSheet = document.createElement("style");
-	styleSheet.textContent = styles;
-	document.head.appendChild(styleSheet);
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = styles;
+    document.head.appendChild(styleSheet);
 }

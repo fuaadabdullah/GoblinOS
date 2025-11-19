@@ -1,0 +1,22 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"type": "object",
+	"properties": {
+		"ensurePnpm": {
+			"type": "boolean",
+			"description": "Whether to ensure pnpm is available",
+			"default": true
+		},
+		"requiredNode": {
+			"type": "string",
+			"description": "Minimum required Node.js version",
+			"default": "18"
+		},
+		"setupGitHooks": {
+			"type": "boolean",
+			"description": "Whether to setup git hooks during bootstrap",
+			"default": true
+		}
+	},
+	"additionalProperties": false
+}

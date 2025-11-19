@@ -27,4 +27,4 @@ plugins:
       ensurePnpm: true
       requiredNode: 20
   - name: quillwarden
-    enabled: false
+    enabled: true

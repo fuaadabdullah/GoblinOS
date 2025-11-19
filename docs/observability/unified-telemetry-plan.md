@@ -1,3 +1,7 @@
+---
+description: "unified-telemetry-plan"
+---
+
 # GoblinOS Unified Telemetry & Audit Plan
 
 Goal: trace every GoblinOS request end-to-end (Overmind → Goblin Runtime → LiteBrain → model providers) while emitting signed audit events for each decision. This plan consolidates the OpenTelemetry stack, collector topology, and tamper-evident logging so implementation can be split across teams without ambiguity.

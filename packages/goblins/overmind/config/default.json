@@ -1,0 +1,33 @@
+{
+  "providers": {
+    "ollama": {
+      "enabled": true,
+      "endpoint": "http://localhost:11434",
+      "defaultModel": "llama2",
+      "timeout": 30000
+    },
+    "openai": {
+      "enabled": false,
+      "model": "gpt-4",
+      "temperature": 0.7,
+      "maxTokens": 2000
+    }
+  },
+  "memory": {
+    "type": "sqlite",
+    "maxMessages": 100,
+    "vectorSearch": {
+      "enabled": false,
+      "dimensions": 384
+    }
+  },
+  "routing": {
+    "defaultProvider": "ollama",
+    "fallbackEnabled": true,
+    "metricsEnabled": true
+  },
+  "logging": {
+    "level": "info",
+    "structured": true
+  }
+}

@@ -1269,58 +1269,6 @@ class LangGraphOrchestrator:
             return "collaborate"
         return "finalize"
 
-
-class AgentPersistence:
-    """Handles agent state persistence."""
-
-    def __init__(self, storage_path: str = "./agent_data"):
-        self.storage_path = storage_path
-        self.memory_store: Dict[str, Any] = {}
-
-    async def save_agent_state(self, agent: BaseAgent) -> None:
-        """Save agent state to persistent storage."""
-        state = {
-            "agent_id": agent.agent_id,
-            "role": agent.role.value,
-            "capabilities": [cap.value for cap in agent.capabilities],
-            "performance_metrics": agent.performance_metrics,
-            "memory": {
-                "short_term": agent.memory.short_term,
-                "working_memory": agent.memory.working_memory,
-                "long_term": agent.memory.long_term,
-            },
-            "last_updated": datetime.now().isoformat(),
-        }
-
-        self.memory_store[agent.agent_id] = state
-        # In a real implementation, this would save to a database or file
-
-    async def load_agent_state(self, agent_id: str) -> Optional[Dict[str, Any]]:
-        """Load agent state from persistent storage."""
-        return self.memory_store.get(agent_id)
-
-    async def save_task_result(self, result: AgentResult) -> None:
-        """Save task result for historical analysis."""
-        # Implementation would save to database
-        pass
-
-    async def get_agent_history(self, agent_id: str) -> List[Dict[str, Any]]:
-        """Get historical performance data for an agent."""
-        # Implementation would query database
-        return []
-
-
-class AgentOrchestrator:
-    """Orchestrates multiple agents to work together on complex tasks."""
-
-    def __init__(self):
-        self.agents: Dict[str, BaseAgent] = {}
-        self.active_tasks: Dict[str, AgentTask] = {}
-        self.task_assignments: Dict[str, List[str]] = {}  # task_id -> [agent_ids]
-        self.collaboration_history: List[Dict[str, Any]] = []
-        self.langgraph_orchestrator = LangGraphOrchestrator()
-        self.persistence = AgentPersistence()
-
     async def register_agent(self, agent: BaseAgent) -> None:
         """Register an agent with the orchestrator."""
         self.agents[agent.agent_id] = agent

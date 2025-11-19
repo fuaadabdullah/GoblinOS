@@ -1,0 +1,113 @@
+/* Shared page styles for Overmind dashboard pages */
+.page-grid {
+  display: grid;
+  gap: 24px;
+}
+
+.page-flex-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.page-section {
+  background: transparent;
+}
+
+.kpi-top {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+}
+
+.tools-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.heading-strong {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.btn-primary {
+  /* keep existing visual defaults; project CSS can refine */
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+/* Utility classes used by pages */
+.controls-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.ml-6 {
+  margin-left: 6px;
+}
+
+.multi-select {
+  margin-left: 6px;
+  min-width: 180px;
+  height: 80px;
+}
+
+.btn-refresh {
+  padding: 6px 12px;
+  border: 1px solid var(--border, #ddd);
+}
+
+.card {
+  background: var(--card-bg, #fafafa);
+  border: 1px solid var(--card-border, #eee);
+}
+
+.card-large {
+  height: 280px;
+}
+
+.card-xlarge {
+  height: 320px;
+  padding-top: 4px;
+}
+
+.card-medium {
+  height: 240px;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.table-full {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-full th {
+  text-align: left;
+  border-bottom: 1px solid #eee;
+  padding: 6px;
+}
+
+.table-full td {
+  padding: 6px;
+}
+
+/* Placeholder page styles */
+.page-description {
+  margin-bottom: 12px;
+}
+
+.code-block {
+  white-space: pre-wrap;
+  background: #fafafa;
+  padding: 12px;
+  border: 1px solid #eee;
+}

@@ -111,7 +111,9 @@ def secrets_list(env_file: Optional[str] = typer.Option(None, help="Optional .en
 
 
 @secrets_app.command("get")
-def secrets_get(key: str, env_file: Optional[str] = typer.Option(None, help="Optional .env file path")):
+def secrets_get(
+    key: str, env_file: Optional[str] = typer.Option(None, help="Optional .env file path")
+):
     """Display a secret value."""
     env_backend = EnvBackend(Path(env_file)) if env_file else None
     mgr = SecretsManager(env_backend=env_backend)
@@ -252,7 +254,9 @@ def pipeline_generate(
     template: str = typer.Argument(..., help="Template name (python-ci|node-ci|release)"),
     filename: str = typer.Argument(..., help="Workflow file name, e.g. python-ci.yml"),
     branch: str = typer.Option("main", help="Primary branch"),
-    envs: str = typer.Option("staging,production", help="Comma separated env list (release template)"),
+    envs: str = typer.Option(
+        "staging,production", help="Comma separated env list (release template)"
+    ),
 ):
     pipeline = _build_pipeline(template, branch, envs)
     generator = get_pipeline_generator()
@@ -503,106 +507,97 @@ app.add_typer(history_app, name="history")
 
 
 @history_app.command("workflows")
-def history_workflows(limit: int = 20):
+async def history_workflows(limit: int = 20):
     """Show recent workflow executions."""
+    try:
+        await cli.initialize()
+        if not cli.state_manager:
+            console.print("[red]State manager not initialized[/red]")
+            return
 
-    async def _show_history():
-        try:
-            await cli.initialize()
-            if not cli.state_manager:
-                console.print("[red]State manager not initialized[/red]")
-                return
+        executions = await cli.state_manager.get_recent_executions(limit)
+        if not executions:
+            console.print("[yellow]No workflow executions found[/yellow]")
+            return
 
-            executions = await cli.state_manager.get_recent_executions(limit)
-            if not executions:
-                console.print("[yellow]No workflow executions found[/yellow]")
-                return
+        table = Table(title=f"Recent Workflow Executions (last {limit})")
+        table.add_column("Workflow ID", style="cyan")
+        table.add_column("Status", style="magenta")
+        table.add_column("Started", style="green")
+        table.add_column("Duration", style="yellow")
+        table.add_column("Tasks", style="blue")
 
-            table = Table(title=f"Recent Workflow Executions (last {limit})")
-            table.add_column("Workflow ID", style="cyan")
-            table.add_column("Status", style="magenta")
-            table.add_column("Started", style="green")
-            table.add_column("Duration", style="yellow")
-            table.add_column("Tasks", style="blue")
+        for execution in executions:
+            status_color = {
+                "completed": "green",
+                "failed": "red",
+                "running": "yellow",
+                "cancelled": "red",
+            }.get(execution.status, "white")
 
-            for execution in executions:
-                status_color = {
-                    "completed": "green",
-                    "failed": "red",
-                    "running": "yellow",
-                    "cancelled": "red",
-                }.get(execution.status, "white")
+            duration_str = f"{execution.duration:.2f}s" if execution.duration is not None else "N/A"
 
-                duration_str = ".2f" if execution.duration else "N/A"
+            table.add_row(
+                execution.workflow_id,
+                f"[{status_color}]{execution.status}[/{status_color}]",
+                execution.started_at.strftime("%Y-%m-%d %H:%M:%S")
+                if execution.started_at
+                else "N/A",
+                duration_str,
+                "N/A",  # Would need to count tasks
+            )
 
-                table.add_row(
-                    execution.workflow_id,
-                    f"[{status_color}]{execution.status}[/{status_color}]",
-                    execution.started_at.strftime("%Y-%m-%d %H:%M:%S")
-                    if execution.started_at
-                    else "N/A",
-                    duration_str,
-                    "N/A",  # Would need to count tasks
-                )
-
-            console.print(table)
-
-        except Exception as e:
-            console.print(f"[red]Error showing history: {e}[/red]")
-        finally:
-            await cli.close()
-
-    asyncio.run(_show_history())
+        console.print(table)
+    except Exception as e:
+        console.print(f"[red]Error showing history: {e}[/red]")
+    finally:
+        await cli.close()
 
 
 # Status command
 @app.command("status")
-def status():
+async def status():
     """Show automation system status."""
+    try:
+        await cli.initialize()
 
-    async def _show_status():
-        try:
-            await cli.initialize()
+        # Check components
+        components = {
+            "Configuration": cli.config_manager is not None,
+            "State Manager": cli.state_manager is not None,
+            "Scheduler": cli.scheduler is not None,
+            "Trigger Manager": cli.trigger_manager is not None,
+            "Workflow Engine": cli.workflow_engine is not None,
+        }
 
-            # Check components
-            components = {
-                "Configuration": cli.config_manager is not None,
-                "State Manager": cli.state_manager is not None,
-                "Scheduler": cli.scheduler is not None,
-                "Trigger Manager": cli.trigger_manager is not None,
-                "Workflow Engine": cli.workflow_engine is not None,
-            }
+        table = Table(title="Automation System Status")
+        table.add_column("Component", style="cyan")
+        table.add_column("Status", style="green")
 
-            table = Table(title="Automation System Status")
-            table.add_column("Component", style="cyan")
-            table.add_column("Status", style="green")
+        for component, available in components.items():
+            status_icon = "✅" if available else "❌"
+            status_text = "[green]Available[/green]" if available else "[red]Unavailable[/red]"
+            table.add_row(component, f"{status_icon} {status_text}")
 
-            for component, available in components.items():
-                status_icon = "✅" if available else "❌"
-                status_text = "[green]Available[/green]" if available else "[red]Unavailable[/red]"
-                table.add_row(component, f"{status_icon} {status_text}")
+        console.print(table)
 
-            console.print(table)
+        # Show some stats
+        if cli.state_manager:
+            executions = await cli.state_manager.get_recent_executions(1000)
+            console.print(f"\n[blue]Total workflow executions: {len(executions)}[/blue]")
 
-            # Show some stats
-            if cli.state_manager:
-                executions = await cli.state_manager.get_recent_executions(1000)
-                console.print(f"\n[blue]Total workflow executions: {len(executions)}[/blue]")
+        if cli.scheduler:
+            schedules = cli.scheduler.list_schedules()
+            console.print(f"[blue]Active schedules: {len(schedules)}[/blue]")
 
-            if cli.scheduler:
-                schedules = cli.scheduler.list_schedules()
-                console.print(f"[blue]Active schedules: {len(schedules)}[/blue]")
+        if cli.trigger_manager:
+            triggers = cli.trigger_manager.list_triggers()
+            console.print(f"[blue]Active triggers: {len(triggers)}[/blue]")
 
-            if cli.trigger_manager:
-                triggers = cli.trigger_manager.list_triggers()
-                console.print(f"[blue]Active triggers: {len(triggers)}[/blue]")
-
-        except Exception as e:
-            console.print(f"[red]Error getting status: {e}[/red]")
-        finally:
-            await cli.close()
-
-    asyncio.run(_show_status())
+    except Exception as e:
+        console.print(f"[red]Error getting status: {e}[/red]")
+    finally:
+        await cli.close()
 
 
 # Main entry point
@@ -612,4 +607,5 @@ def main():
 
 
 if __name__ == "__main__":
+    # Typer's default runner will handle the async commands correctly
     main()

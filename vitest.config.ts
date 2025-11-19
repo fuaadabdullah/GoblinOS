@@ -12,5 +12,8 @@ export default defineConfig({
 			"**/test.disabled/**",
 			"**/*.disabled/**",
 		],
+		setupFiles: [
+			"packages/goblins/overmind/dashboard/src/test/setup.ts"
+		],
 	},
 });

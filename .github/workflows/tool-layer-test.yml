@@ -1,0 +1,32 @@
+name: GoblinOS Tool Layer Tests
+
+on:
+  push:
+    paths:
+      - 'packages/tool-layer/**'
+      - 'docs/schemas/tool-invocation.schema.json'
+  pull_request:
+    paths:
+      - 'packages/tool-layer/**'
+      - 'docs/schemas/tool-invocation.schema.json'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: cd packages/tool-layer && pnpm install
+      - name: Run tests
+        run: cd packages/tool-layer && pnpm test
+      - name: Type check
+        run: cd packages/tool-layer && pnpm typecheck
+      - name: Lint
+        run: cd packages/tool-layer && pnpm lint

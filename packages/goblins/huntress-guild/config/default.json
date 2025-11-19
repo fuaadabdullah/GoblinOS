@@ -1,0 +1,26 @@
+{
+  "test_analysis": {
+    "min_runs_for_flaky_detection": 5,
+    "flaky_threshold": 0.1,
+    "enable_pattern_recognition": true,
+    "log_analysis_depth": 1000
+  },
+  "regression_triage": {
+    "git_blame_depth": 10,
+    "impact_assessment_enabled": true,
+    "auto_tag_incidents": true
+  },
+  "signal_scouting": {
+    "log_files_patterns": ["*.log", "logs/*.log"],
+    "early_signal_threshold": 0.05,
+    "trend_analysis_window": 7
+  },
+  "incident_reporting": {
+    "severity_threshold": "medium",
+    "auto_resolution_enabled": false,
+    "notification_channels": []
+  },
+  "enable_telemetry": true,
+  "log_level": "INFO",
+  "workspace_root": null
+}

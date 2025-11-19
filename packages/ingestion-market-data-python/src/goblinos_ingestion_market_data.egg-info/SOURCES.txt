@@ -1,0 +1,12 @@
+README.md
+pyproject.toml
+src/goblinos_ingestion_market_data/__init__.py
+src/goblinos_ingestion_market_data/example.py
+src/goblinos_ingestion_market_data/provider.py
+src/goblinos_ingestion_market_data/provider_test.py
+src/goblinos_ingestion_market_data/types.py
+src/goblinos_ingestion_market_data.egg-info/PKG-INFO
+src/goblinos_ingestion_market_data.egg-info/SOURCES.txt
+src/goblinos_ingestion_market_data.egg-info/dependency_links.txt
+src/goblinos_ingestion_market_data.egg-info/requires.txt
+src/goblinos_ingestion_market_data.egg-info/top_level.txt

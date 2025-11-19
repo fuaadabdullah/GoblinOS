@@ -1,3 +1,7 @@
+---
+description: "README"
+---
+
 # GoblinOS Desktop - Tauri Application# Tauri + React + Typescript
 
 

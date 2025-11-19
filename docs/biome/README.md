@@ -1,3 +1,7 @@
+---
+description: "README"
+---
+
 # World-Class Biome Configuration for GoblinOS
 
 This configuration provides enterprise-grade linting and formatting for the GoblinOS monorepo.

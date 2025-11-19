@@ -1,3 +1,7 @@
+---
+description: "KPI"
+---
+
 # KPI Tracking — Local DB
 
 GoblinOS records lightweight KPI events and tool invocations into a local SQLite database for the Overmind dashboard/hub to consume.

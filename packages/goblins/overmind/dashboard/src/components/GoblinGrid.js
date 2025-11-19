@@ -1,3 +1,7 @@
+export { default } from "./GoblinGrid";
+export * from "./GoblinGrid";
+
+// Thin wrapper re-exporting the TSX implementation.
 /**
  * GoblinGrid - Display goblins grouped by guild
  *
@@ -8,126 +12,31 @@
  * - Hover effects with glow
  */
 import { useEffect, useState } from "react";
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-export function GoblinGrid({
-	goblins,
-	selectedGoblinId,
-	onSelectGoblin,
-	busyGoblins = new Set(),
-}) {
-	const [goblinsByGuild, setGoblinsByGuild] = useState({});
-	// Group goblins by guild
-	useEffect(() => {
-		const grouped = goblins.reduce((acc, goblin) => {
-			const guild = goblin.guild || "Unknown";
-			if (!acc[guild]) {
-				acc[guild] = [];
-			}
-			acc[guild].push(goblin);
-			return acc;
-		}, {});
-		setGoblinsByGuild(grouped);
-	}, [goblins]);
-	if (goblins.length === 0) {
-		return _jsx("div", {
-			className: "goblin-grid-empty",
-			children: _jsxs("div", {
-				className: "empty-state",
-				children: [
-					_jsx("div", { className: "empty-icon", children: "\uD83E\uDD16" }),
-					_jsx("h3", { children: "No Goblins Available" }),
-					_jsx("p", {
-						className: "text-muted",
-						children: "Check server connection",
-					}),
-				],
-			}),
-		});
-	}
-	return _jsx("div", {
-		className: "goblin-grid",
-		children: Object.entries(goblinsByGuild).map(([guild, guildGoblins]) =>
-			_jsxs(
-				"div",
-				{
-					className: "guild-section",
-					children: [
-						_jsxs("h3", {
-							className: "guild-header",
-							children: [
-								_jsx("span", { className: "guild-name", children: guild }),
-								_jsx("span", {
-									className: "guild-count text-muted",
-									children: guildGoblins.length,
-								}),
-							],
-						}),
-						_jsx("div", {
-							className: "goblins-list",
-							children: guildGoblins.map((goblin) => {
-								const isSelected = goblin.id === selectedGoblinId;
-								const isBusy = busyGoblins.has(goblin.id);
-								return _jsxs(
-									"button",
-									{
-										className: `goblin-card ${isSelected ? "selected" : ""} ${isBusy ? "busy" : ""}`,
-										onClick: () => onSelectGoblin(goblin.id),
-										disabled: isBusy,
-										children: [
-											_jsx("div", {
-												className: "goblin-status",
-												children: _jsx("div", {
-													className: `status-dot ${isBusy ? "status-busy" : "status-idle"}`,
-												}),
-											}),
-											_jsxs("div", {
-												className: "goblin-info",
-												children: [
-													_jsx("h4", {
-														className: "goblin-title",
-														children: goblin.title,
-													}),
-													_jsx("code", {
-														className: "goblin-id text-muted",
-														children: goblin.id,
-													}),
-												],
-											}),
-											goblin.responsibilities &&
-												goblin.responsibilities.length > 0 &&
-												_jsxs("div", {
-													className: "goblin-responsibilities",
-													children: [
-														_jsx("ul", {
-															children: goblin.responsibilities
-																.slice(0, 3)
-																.map((resp, idx) =>
-																	_jsx("li", { children: resp }, idx),
-																),
-														}),
-														goblin.responsibilities.length > 3 &&
-															_jsxs("span", {
-																className: "text-muted",
-																children: [
-																	"+",
-																	goblin.responsibilities.length - 3,
-																	" more",
-																],
-															}),
-													],
-												}),
-										],
-									},
-									goblin.id,
-								);
-							}),
-						}),
-					],
-				},
-				guild,
-			),
-		),
-	});
+export function GoblinGrid({ goblins, selectedGoblinId, onSelectGoblin, busyGoblins = new Set(), }) {
+    const [goblinsByGuild, setGoblinsByGuild] = useState({});
+    // Group goblins by guild
+    useEffect(() => {
+        const grouped = goblins.reduce((acc, goblin) => {
+            const guild = goblin.guild || "Unknown";
+            if (!acc[guild]) {
+                acc[guild] = [];
+            }
+            acc[guild].push(goblin);
+            return acc;
+        }, {});
+        setGoblinsByGuild(grouped);
+    }, [goblins]);
+    if (goblins.length === 0) {
+        return (_jsx("div", { className: "goblin-grid-empty", children: _jsxs("div", { className: "empty-state", children: [_jsx("div", { className: "empty-icon", children: "\uD83E\uDD16" }), _jsx("h3", { children: "No Goblins Available" }), _jsx("p", { className: "text-muted", children: "Check server connection" })] }) }));
+    }
+    return (_jsx("div", { className: "goblin-grid", children: Object.entries(goblinsByGuild).map(([guild, guildGoblins]) => (_jsxs("div", { className: "guild-section", children: [_jsxs("h3", { className: "guild-header", children: [_jsx("span", { className: "guild-name", children: guild }), _jsx("span", { className: "guild-count text-muted", children: guildGoblins.length })] }), _jsx("div", { className: "goblins-list", children: guildGoblins.map((goblin) => {
+                        const isSelected = goblin.id === selectedGoblinId;
+                        const isBusy = busyGoblins.has(goblin.id);
+                        return (_jsxs("button", { className: `goblin-card ${isSelected ? "selected" : ""} ${isBusy ? "busy" : ""}`, onClick: () => onSelectGoblin(goblin.id), disabled: isBusy, children: [_jsx("div", { className: "goblin-status", children: _jsx("div", { className: `status-dot ${isBusy ? "status-busy" : "status-idle"}` }) }), _jsxs("div", { className: "goblin-info", children: [_jsx("h4", { className: "goblin-title", children: goblin.title }), _jsx("code", { className: "goblin-id text-muted", children: goblin.id })] }), goblin.responsibilities &&
+                                    goblin.responsibilities.length > 0 && (_jsxs("div", { className: "goblin-responsibilities", children: [_jsx("ul", { children: goblin.responsibilities
+                                                .slice(0, 3)
+                                                .map((resp, idx) => (_jsx("li", { children: resp }, idx))) }), goblin.responsibilities.length > 3 && (_jsxs("span", { className: "text-muted", children: ["+", goblin.responsibilities.length - 3, " more"] }))] }))] }, goblin.id));
+                    }) })] }, guild))) }));
 }
 /* ============================================================================
  * Styles (can be moved to separate CSS file)
@@ -309,7 +218,7 @@ const styles = `
 `;
 // Inject styles (for demo purposes - should be in separate CSS file)
 if (typeof document !== "undefined") {
-	const styleSheet = document.createElement("style");
-	styleSheet.textContent = styles;
-	document.head.appendChild(styleSheet);
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = styles;
+    document.head.appendChild(styleSheet);
 }

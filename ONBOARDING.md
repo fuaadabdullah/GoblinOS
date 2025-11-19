@@ -1,3 +1,7 @@
+---
+description: "ONBOARDING"
+---
+
 # GoblinOS — Quick Onboarding
 
 This page covers the minimal steps to get productive with GoblinOS automation and run basic goblins.

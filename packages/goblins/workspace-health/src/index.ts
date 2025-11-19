@@ -1,30 +1,131 @@
-type Goblin = {
-	name: string;
-	run(args: Record<string, unknown>): Promise<number>;
-	health?: () => Promise<string>;
-};
+/**
+ * Workspace Health Goblin
+ *
+ * Runs comprehensive health checks on the workspace including linting, testing, and smoke tests
+ */
 
-import { runEslint } from "./checks/eslint.js";
-import { runSmoke } from "./checks/smoke.js";
-import { runTests } from "./checks/tests.js";
-import { runTypecheck } from "./checks/typecheck.js";
+import { WorkspaceHealthLogic } from "./logic.js";
+import type { WorkspaceHealthConfig } from "./types.js";
 
-export default function make(opts: Record<string, unknown>): Goblin {
-	return {
-		name: "workspace-health",
-		async run() {
-			const smokeUrl = (
-				opts && typeof opts === "object" ? opts.smokeUrl : undefined
-			) as unknown;
-			const results = await Promise.all([
-				runEslint(),
-				runTypecheck(),
-				runTests(),
-				runSmoke(typeof smokeUrl === "string" ? smokeUrl : undefined),
-			]);
-			const bad = results.find((r: number) => r !== 0);
-			console.log("[health] done");
-			return bad ? 1 : 0;
-		},
-	};
+// Temporary local interfaces until @goblinos/shared exports them
+interface GoblinConfig {
+	id: string;
+	config?: Record<string, any>;
+	logger?: any;
+	workingDir?: string;
 }
+
+interface GoblinContext {
+	input?: any;
+	metadata?: Record<string, any>;
+	cancelToken?: AbortSignal;
+}
+
+interface GoblinResult {
+	success: boolean;
+	output?: any;
+	error?: Error;
+	metadata?: Record<string, any>;
+}
+
+interface GoblinCapabilities {
+	name: string;
+	description: string;
+	version: string;
+	inputSchema?: any;
+	outputSchema?: any;
+	tags?: string[];
+}
+
+interface GoblinInterface {
+	initialize(): Promise<void>;
+	execute(context: GoblinContext): Promise<GoblinResult>;
+	shutdown(): Promise<void>;
+	getCapabilities(): GoblinCapabilities;
+}
+
+export class WorkspaceHealthGoblin implements GoblinInterface {
+	private logic: WorkspaceHealthLogic | null = null;
+
+	constructor(config: GoblinConfig) {
+		// Load configuration from default.json and merge with provided config
+		const defaultConfig: WorkspaceHealthConfig = {
+			runEslint: true,
+			runTypecheck: true,
+			runTests: true,
+			runSmoke: true,
+			smokeUrl: "http://localhost:3000",
+			timeout: 30000
+		};
+
+		const goblinConfig: WorkspaceHealthConfig = {
+			...defaultConfig,
+			...(config.config as WorkspaceHealthConfig || {})
+		};
+
+		this.logic = new WorkspaceHealthLogic(goblinConfig);
+		console.log(`[workspace-health] Initialized with config:`, goblinConfig);
+	}
+
+	async initialize(): Promise<void> {
+		// Initialization is done in constructor
+	}
+
+	async execute(_context: GoblinContext): Promise<GoblinResult> {
+		try {
+			if (!this.logic) {
+				throw new Error("Goblin not initialized");
+			}
+
+			const checkResult = await this.logic.runAllChecks();
+
+			if (checkResult.success) {
+				return {
+					success: true,
+					output: checkResult.summary,
+					metadata: {
+						completed: true,
+						timestamp: new Date().toISOString(),
+						checkCount: checkResult.summary.results.length
+					}
+				};
+			} else {
+				return {
+					success: false,
+					error: new Error(checkResult.error?.message || "Health checks failed"),
+					metadata: {
+						errorType: checkResult.error?.type,
+						failedCheck: checkResult.error?.failedCheck,
+						suggestion: checkResult.error?.suggestion,
+						timestamp: new Date().toISOString()
+					}
+				};
+			}
+		} catch (error) {
+			return {
+				success: false,
+				error: error as Error,
+				metadata: {
+					timestamp: new Date().toISOString()
+				}
+			};
+		}
+	}
+
+	async shutdown(): Promise<void> {
+		this.logic = null;
+		console.log("[workspace-health] Shutdown complete");
+	}
+
+	getCapabilities(): GoblinCapabilities {
+		return {
+			name: "Workspace Health Checker",
+			description: "Run comprehensive health checks on the workspace including linting, testing, and smoke tests",
+			version: "1.0.0",
+			tags: ["health", "testing", "quality", "workspace"]
+		};
+	}
+}
+
+// Default export for backward compatibility
+export default WorkspaceHealthGoblin;

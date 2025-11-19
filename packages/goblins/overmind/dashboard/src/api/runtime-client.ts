@@ -9,123 +9,38 @@
  */
 
 // ============================================================================
-// Types
+// Types (imported)
 // ============================================================================
 
-export interface Goblin {
-	id: string;
-	title: string;
-	guild: string;
-	responsibilities?: string[];
-}
+import type {
+	Goblin,
+	GoblinTask,
+	GoblinResponse,
+	GoblinStats,
+	HistoryEntry,
+	HealthResponse,
+	StreamEvent,
+	StreamCallback,
+	OrchestrationStep,
+	OrchestrationPlan,
+	OrchestrationProgress,
+} from "./types";
 
-export interface GoblinTask {
-	goblin: string;
-	task: string;
-	context?: Record<string, unknown>;
-	dryRun?: boolean;
-}
-
-export interface GoblinResponse {
-	goblin: string;
-	task: string;
-	tool?: string;
-	command?: string;
-	output?: string;
-	reasoning: string;
-	timestamp: Date;
-	duration_ms: number;
-	success: boolean;
-	kpis?: Record<string, unknown>;
-}
-
-export interface GoblinStats {
-	totalTasks: number;
-	successfulTasks: number;
-	failedTasks: number;
-	successRate: number;
-	avgDuration: number;
-	recentTasks: HistoryEntry[];
-}
-
-export interface HistoryEntry {
-	id: string;
-	goblin: string;
-	task: string;
-	response: string;
-	timestamp: Date;
-	kpis?: Record<string, unknown>;
-	success: boolean;
-}
-
-export interface HealthResponse {
-	status: "healthy" | "unhealthy";
-	initialized: boolean;
-	timestamp: string;
-}
-
-export interface StreamEvent {
-	type: "start" | "chunk" | "complete" | "error";
-	goblin: string;
-	task?: string;
-	data?: string;
-	response?: GoblinResponse;
-	error?: string;
-	timestamp: string;
-}
-
-export type StreamCallback = (event: StreamEvent) => void;
-
-// ============================================================================
-// Orchestration Types
-// ============================================================================
-
-export interface OrchestrationStep {
-	id: string;
-	goblinId: string;
-	task: string;
-	dependencies: string[];
-	condition?: {
-		stepId: string;
-		operator: "IF_SUCCESS" | "IF_FAILURE" | "IF_CONTAINS";
-		value?: string;
-	};
-	status: "pending" | "running" | "completed" | "failed" | "skipped";
-	result?: {
-		output: string;
-		error?: string;
-		duration: number;
-		startedAt: Date;
-		completedAt: Date;
-	};
-}
-
-export interface OrchestrationPlan {
-	id: string;
-	description: string;
-	steps: OrchestrationStep[];
-	createdAt: Date;
-	status: "pending" | "running" | "completed" | "failed" | "cancelled";
-	metadata: {
-		totalSteps: number;
-		parallelBatches: number;
-		estimatedDuration?: number;
-	};
-}
-
-export interface OrchestrationProgress {
-	planId: string;
-	currentStep: number;
-	totalSteps: number;
-	completedSteps: number;
-	failedSteps: number;
-	skippedSteps: number;
-	status: OrchestrationPlan["status"];
-	currentBatch?: {
-		stepIds: string[];
-		progress: Record<string, number>;
-	};
-}
+// Re-export API types for backwards compatibility
+export type {
+	Goblin,
+	GoblinTask,
+	GoblinResponse,
+	GoblinStats,
+	HistoryEntry,
+	HealthResponse,
+	StreamEvent,
+	StreamCallback,
+	OrchestrationStep,
+	OrchestrationPlan,
+	OrchestrationProgress,
+} from "./types";
+// (Orchestration types re-exported from ./types)
 
 // ============================================================================
 // RuntimeClient
@@ -134,6 +49,7 @@ export interface OrchestrationProgress {
 export class RuntimeClient {
 	private baseUrl: string;
 	private ws: WebSocket | null = null;
+	private authToken: string | null = null;
 	private reconnectAttempts = 0;
 	private maxReconnectAttempts = 5;
 	private reconnectDelay = 1000; // ms
@@ -142,6 +58,31 @@ export class RuntimeClient {
 
 	constructor(baseUrl = "http://localhost:3001") {
 		this.baseUrl = baseUrl;
+	}
+
+	setAuthToken(token: string | null) {
+		this.authToken = token;
+	}
+
+	async login(username: string, password: string): Promise<string> {
+		const response = await fetch(`${this.baseUrl}/api/auth/login`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ username, password }),
+		});
+		if (!response.ok) {
+			const err = await response.json().catch(() => ({ error: response.statusText }));
+			throw new Error(err.error || "Login failed");
+		}
+		const { token } = await response.json();
+		this.setAuthToken(token);
+		return token;
+	}
+
+	private headers(): Record<string, string> {
+		const headers: Record<string, string> = { "Content-Type": "application/json" };
+		if (this.authToken) headers["Authorization"] = `Bearer ${this.authToken}`;
+		return headers;
 	}
 
 	// ==========================================================================
@@ -153,7 +94,7 @@ export class RuntimeClient {
 	 * Fetch list of all available goblins
 	 */
 	async getGoblins(): Promise<Goblin[]> {
-		const response = await fetch(`${this.baseUrl}/api/goblins`);
+		const response = await fetch(`${this.baseUrl}/api/goblins`, { headers: this.headers() });
 		if (!response.ok) {
 			throw new Error(`Failed to fetch goblins: ${response.statusText}`);
 		}
@@ -167,7 +108,7 @@ export class RuntimeClient {
 	async executeTask(task: GoblinTask): Promise<GoblinResponse> {
 		const response = await fetch(`${this.baseUrl}/api/execute`, {
 			method: "POST",
-			headers: { "Content-Type": "application/json" },
+			headers: this.headers(),
 			body: JSON.stringify(task),
 		});
 
@@ -186,9 +127,7 @@ export class RuntimeClient {
 	 * Fetch task history for a specific goblin
 	 */
 	async getHistory(goblinId: string, limit = 10): Promise<HistoryEntry[]> {
-		const response = await fetch(
-			`${this.baseUrl}/api/history/${goblinId}?limit=${limit}`,
-		);
+		const response = await fetch(`${this.baseUrl}/api/history/${goblinId}?limit=${limit}`, { headers: this.headers() });
 		if (!response.ok) {
 			throw new Error(`Failed to fetch history: ${response.statusText}`);
 		}
@@ -200,7 +139,7 @@ export class RuntimeClient {
 	 * Fetch performance stats for a specific goblin
 	 */
 	async getStats(goblinId: string): Promise<GoblinStats> {
-		const response = await fetch(`${this.baseUrl}/api/stats/${goblinId}`);
+	const response = await fetch(`${this.baseUrl}/api/stats/${goblinId}`, { headers: this.headers() });
 		if (!response.ok) {
 			throw new Error(`Failed to fetch stats: ${response.statusText}`);
 		}
@@ -212,7 +151,7 @@ export class RuntimeClient {
 	 * Check server health
 	 */
 	async getHealth(): Promise<HealthResponse> {
-		const response = await fetch(`${this.baseUrl}/api/health`);
+	const response = await fetch(`${this.baseUrl}/api/health`, { headers: this.headers() });
 		if (!response.ok) {
 			throw new Error(`Health check failed: ${response.statusText}`);
 		}
@@ -233,7 +172,7 @@ export class RuntimeClient {
 	): Promise<OrchestrationPlan> {
 		const response = await fetch(`${this.baseUrl}/api/orchestrate/parse`, {
 			method: "POST",
-			headers: { "Content-Type": "application/json" },
+			headers: this.headers(),
 			body: JSON.stringify({ text, defaultGoblinId }),
 		});
 
@@ -257,7 +196,7 @@ export class RuntimeClient {
 	): Promise<OrchestrationPlan> {
 		const response = await fetch(`${this.baseUrl}/api/orchestrate/execute`, {
 			method: "POST",
-			headers: { "Content-Type": "application/json" },
+			headers: this.headers(),
 			body: JSON.stringify({ text, defaultGoblinId }),
 		});
 
@@ -282,7 +221,7 @@ export class RuntimeClient {
 			? `${this.baseUrl}/api/orchestrate/plans?status=${status}`
 			: `${this.baseUrl}/api/orchestrate/plans`;
 
-		const response = await fetch(url);
+	const response = await fetch(url, { headers: this.headers() });
 		if (!response.ok) {
 			throw new Error(
 				`Failed to fetch orchestration plans: ${response.statusText}`,
@@ -296,9 +235,7 @@ export class RuntimeClient {
 	 * Get specific orchestration plan by ID
 	 */
 	async getOrchestrationPlan(planId: string): Promise<OrchestrationPlan> {
-		const response = await fetch(
-			`${this.baseUrl}/api/orchestrate/plans/${planId}`,
-		);
+		const response = await fetch(`${this.baseUrl}/api/orchestrate/plans/${planId}`, { headers: this.headers() });
 		if (!response.ok) {
 			throw new Error(
 				`Failed to fetch orchestration plan: ${response.statusText}`,
@@ -314,12 +251,7 @@ export class RuntimeClient {
 	async cancelOrchestration(
 		planId: string,
 	): Promise<{ success: boolean; planId: string }> {
-		const response = await fetch(
-			`${this.baseUrl}/api/orchestrate/cancel/${planId}`,
-			{
-				method: "POST",
-			},
-		);
+		const response = await fetch(`${this.baseUrl}/api/orchestrate/cancel/${planId}`, { method: "POST", headers: this.headers() });
 
 		if (!response.ok) {
 			throw new Error(`Failed to cancel orchestration: ${response.statusText}`);

@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState } from "react";
-import type { RuntimeClient } from "../api/runtime-client";
+import type { RuntimeClient } from "../api/tauri-client";
 
 interface TokenUsage {
 	inputTokens: number;
@@ -80,12 +80,7 @@ export function CostPanel({ client, refreshTrigger }: CostPanelProps) {
 				setLoading(true);
 				setError(null);
 
-				const response = await fetch(
-					`${client["baseUrl"]}/api/costs/summary?limit=20`,
-				);
-				if (!response.ok) throw new Error("Failed to fetch costs");
-
-				const data = await response.json();
+				const data = await client.getCostSummary();
 				if (mounted) {
 					setSummary(data);
 				}
@@ -109,10 +104,7 @@ export function CostPanel({ client, refreshTrigger }: CostPanelProps) {
 	// Handle CSV export
 	const handleExport = async () => {
 		try {
-			const response = await fetch(`${client["baseUrl"]}/api/costs/export`);
-			if (!response.ok) throw new Error("Failed to export");
-
-			const csv = await response.text();
+			const csv = await client.exportCosts();
 			const blob = new Blob([csv], { type: "text/csv" });
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement("a");
@@ -122,6 +114,7 @@ export function CostPanel({ client, refreshTrigger }: CostPanelProps) {
 			URL.revokeObjectURL(url);
 		} catch (err) {
 			console.error("Export failed:", err);
+			alert("Cost export not yet implemented");
 		}
 	};
 

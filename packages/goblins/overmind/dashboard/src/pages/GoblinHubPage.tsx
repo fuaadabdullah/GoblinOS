@@ -11,41 +11,37 @@ import { useEffect, useState } from "react";
 import {
 	type Goblin,
 	type RuntimeClient,
-	getDefaultClient,
-} from "../api/runtime-client";
+} from "../api/tauri-client";
 import { CostPanel } from "../components/CostPanel";
 import { GoblinGrid } from "../components/GoblinGrid";
 import { HistoryPanel } from "../components/HistoryPanel";
+import { RuntimeStatusPanel } from "../components/RuntimeStatusPanel";
 import { StatsPanel } from "../components/StatsPanel";
 import { TaskExecutor } from "../components/TaskExecutor";
+import { LoginPanel } from "../components/LoginPanel";
 import "../styles/dark-theme.css";
 
-export function GoblinHubPage() {
-	const [client] = useState<RuntimeClient>(() =>
-		getDefaultClient("http://localhost:3001"),
-	);
+export function GoblinHubPage({ client }: { client: RuntimeClient }) {
 	const [goblins, setGoblins] = useState<Goblin[]>([]);
 	const [selectedGoblinId, setSelectedGoblinId] = useState<string | null>(null);
 	const [selectedGoblin, setSelectedGoblin] = useState<Goblin | null>(null);
-	const [busyGoblins, setBusyGoblins] = useState<Set<string>>(new Set());
+	const [busyGoblins] = useState<Set<string>>(new Set());
 	const [refreshTrigger, setRefreshTrigger] = useState(0);
 	const [serverStatus, setServerStatus] = useState<
 		"connecting" | "connected" | "error"
 	>("connecting");
 
-	// Initialize: check server health and fetch goblins
-	useEffect(() => {
-		const init = async () => {
-			try {
-				// Check server health
-				await client.getHealth();
-				setServerStatus("connected");
+		// Initialize: check server health and fetch goblins
+		useEffect(() => {
+			const init = async () => {
+				try {
+					// Check server health - skip for desktop app
+					// await client.getHealth();
+					setServerStatus("connected");
 
-				// Fetch goblins list
-				const goblinsList = await client.getGoblins();
-				setGoblins(goblinsList);
-
-				// Auto-select first goblin
+					// Fetch goblins list
+					const goblinsList = await client.getGoblins();
+					setGoblins(goblinsList);				// Auto-select first goblin
 				if (goblinsList.length > 0 && !selectedGoblinId) {
 					setSelectedGoblinId(goblinsList[0].id);
 				}
@@ -132,6 +128,7 @@ export function GoblinHubPage() {
 						<span className="status-dot status-connected" />
 						<span className="text-muted">Connected</span>
 					</div>
+					<LoginPanel client={client as any} />
 				</div>
 			</header>
 
@@ -157,7 +154,7 @@ export function GoblinHubPage() {
 					/>
 				</main>
 
-				{/* Right Sidebar: Stats + History + Costs */}
+				{/* Right Sidebar: Stats + History + Costs + Runtime Status + API Keys */}
 				<aside className="hub-sidebar-right">
 					<StatsPanel
 						client={client}
@@ -170,7 +167,126 @@ export function GoblinHubPage() {
 						refreshTrigger={refreshTrigger}
 					/>
 					<CostPanel client={client} refreshTrigger={refreshTrigger} />
+					<RuntimeStatusPanel client={client} />
+					<APIKeyTestPanel client={client} />
 				</aside>
+			</div>
+		</div>
+	);
+}
+
+/* ============================================================================
+ * API Key Test Panel Component
+ * ========================================================================== */
+
+function APIKeyTestPanel({ client }: { client: RuntimeClient }) {
+	const [providers, setProviders] = useState<string[]>([]);
+	const [selectedProvider, setSelectedProvider] = useState<string>("");
+	const [apiKey, setApiKey] = useState<string>("");
+	const [testResults, setTestResults] = useState<string[]>([]);
+
+	useEffect(() => {
+		// Load available providers
+		client.getProviders().then(setProviders).catch(console.error);
+	}, [client]);
+
+	const addTestResult = (message: string) => {
+		setTestResults((prev) => [
+			...prev.slice(-4),
+			`${new Date().toLocaleTimeString()}: ${message}`,
+		]);
+	};
+
+	const testStoreApiKey = async () => {
+		if (!selectedProvider || !apiKey) return;
+		try {
+			await client.storeApiKey(selectedProvider, apiKey);
+			addTestResult(`✅ Stored API key for ${selectedProvider}`);
+		} catch (error) {
+			addTestResult(`❌ Failed to store API key: ${error}`);
+		}
+	};
+
+	const testGetApiKey = async () => {
+		if (!selectedProvider) return;
+		try {
+			const key = await client.getApiKey(selectedProvider);
+			addTestResult(
+				`✅ Retrieved API key for ${selectedProvider}: ${key ? "Present" : "Not found"}`,
+			);
+		} catch (error) {
+			addTestResult(`❌ Failed to get API key: ${error}`);
+		}
+	};
+
+	const testClearApiKey = async () => {
+		if (!selectedProvider) return;
+		try {
+			await client.clearApiKey(selectedProvider);
+			addTestResult(`✅ Cleared API key for ${selectedProvider}`);
+		} catch (error) {
+			addTestResult(`❌ Failed to clear API key: ${error}`);
+		}
+	};
+
+	return (
+		<div className="panel api-key-test-panel">
+			<div className="panel-header">
+				<h3>API Key Testing</h3>
+			</div>
+			<div className="panel-content">
+				<div className="form-group">
+					<label htmlFor="provider-select">Provider:</label>
+					<select
+						id="provider-select"
+						value={selectedProvider}
+						onChange={(e) => setSelectedProvider(e.target.value)}
+					>
+						<option value="">Select provider...</option>
+						{providers.map((provider) => (
+							<option key={provider} value={provider}>
+								{provider}
+							</option>
+						))}
+					</select>
+				</div>
+
+				<div className="form-group">
+					<label htmlFor="api-key-input">API Key:</label>
+					<input
+						id="api-key-input"
+						type="password"
+						value={apiKey}
+						onChange={(e) => setApiKey(e.target.value)}
+						placeholder="Enter test API key"
+					/>
+				</div>
+
+				<div className="button-group">
+					<button
+						onClick={testStoreApiKey}
+						disabled={!selectedProvider || !apiKey}
+					>
+						Store Key
+					</button>
+					<button onClick={testGetApiKey} disabled={!selectedProvider}>
+						Get Key
+					</button>
+					<button onClick={testClearApiKey} disabled={!selectedProvider}>
+						Clear Key
+					</button>
+				</div>
+
+				<div className="test-results">
+					<h4>Test Results:</h4>
+					<div className="results-list">
+						{testResults.map((result, index) => (
+							<div key={index} className="result-item">
+								{result}
+							</div>
+						))}
+					</div>
+				</div>
 			</div>
 		</div>
 	);

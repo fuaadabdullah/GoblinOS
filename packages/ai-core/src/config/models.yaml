@@ -1,0 +1,20 @@
+models:
+  - name: ollama-llama3
+    provider: ollama
+    role: reasoning
+    config:
+      host: http://localhost:11434
+      model: llama3
+  - name: gemini-pro
+    provider: gemini
+    role: creative
+    config:
+      apiKey: ${GEMINI_API_KEY}
+
+pipelines:
+  - name: hybrid-rag
+    steps:
+      - model: ollama-llama3
+        action: retrieve_and_reason
+      - model: gemini-pro
+        action: generate_creative_summary

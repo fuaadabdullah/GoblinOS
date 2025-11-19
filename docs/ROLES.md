@@ -1,6 +1,6 @@
 # GoblinOS Roles — Overview
 
-Last updated: 2025-11-09
+Last updated: 2025-11-18
 Source of truth: `GoblinOS/goblins.yaml`
 
 This document is generated from the YAML and summarizes the Overmind, guilds, members, brains, and KPIs.
@@ -18,18 +18,10 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
 ### Forge
 - Charter: Core logic, build graph, performance budgets, break-glass fixes.
 - Toolbelt:
-  - **portfolio-dev** — Portfolio Dev Server
-    - Summary: Run the portfolio locally with NEXT_PUBLIC_SITE_URL managed by the guild.
-    - Owner: vanta-lumin
-    - Command: `NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}" PORTFOLIO_DIR="${PORTFOLIO_DIR:-/Users/fuaadabdullah/Downloads/fuaad-portfolio-starter}" bash tools/portfolio_env.sh dev`
-  - **portfolio-build** — Portfolio Build
-    - Summary: Build the portfolio with NEXT_PUBLIC_SITE_URL managed by the guild.
-    - Owner: vanta-lumin
-    - Command: `NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}" PORTFOLIO_DIR="${PORTFOLIO_DIR:-/Users/fuaadabdullah/Downloads/fuaad-portfolio-starter}" bash tools/portfolio_env.sh build`
   - **forge-lite-build** — Forge Lite Build
     - Summary: Build production bundle for all platforms.
     - Owner: dregg-embercode
-    - Command: `cd apps/forge-lite && pnpm build`
+    - Command: `cd ../apps/forge-lite && pnpm build`
   - **forge-lite-release-build** — Forge Lite Release Build
     - Summary: Build production bundles for iOS, Android, and Web using EAS.
     - Owner: dregg-embercode
@@ -65,10 +57,30 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
 ### Crafters
 - Charter: UI systems, theme tokens, a11y, CLS/LCP budgets; APIs, schemas, queues, idempotency, error budgets.
 - Toolbelt:
+  - **portfolio-dev** — Portfolio Dev Server
+    - Summary: Run the portfolio locally with NEXT_PUBLIC_SITE_URL managed by the guild.
+    - Owner: vanta-lumin
+    - Command: `NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}" PORTFOLIO_DIR="${PORTFOLIO_DIR:-/Users/fuaadabdullah/Downloads/fuaad-portfolio-starter}" bash tools/portfolio_env.sh dev`
+  - **portfolio-build** — Portfolio Build
+    - Summary: Build the portfolio with NEXT_PUBLIC_SITE_URL managed by the guild.
+    - Owner: vanta-lumin
+    - Command: `NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}" PORTFOLIO_DIR="${PORTFOLIO_DIR:-/Users/fuaadabdullah/Downloads/fuaad-portfolio-starter}" bash tools/portfolio_env.sh build`
   - **forge-lite-bootstrap** — Forge Lite Repo Bootstrap
     - Summary: Bootstrap a new Forge Lite repo - install deps, setup environment, create .env.local
     - Owner: vanta-lumin
     - Command: `bash tools/forge_lite_env.sh setup`
+  - **repo-bootstrap** — Repository Bootstrap Goblin
+    - Summary: Bootstrap repository with pnpm, Node.js version check, and git hooks setup
+    - Owner: vanta-lumin
+    - Command: `echo "Repo-bootstrap goblin executed via GoblinLoader"`
+  - **workspace-health** — Workspace Health Goblin
+    - Summary: Run comprehensive health checks on the workspace including linting, testing, and smoke tests
+    - Owner: vanta-lumin
+    - Command: `echo "Workspace-health goblin executed via GoblinLoader"`
+  - **forge-smithy** — Forge Smithy Goblin
+    - Summary: Environment management, bootstrapping, and development tooling for Python projects
+    - Owner: vanta-lumin
+    - Command: `echo "Forge-smithy goblin executed via GoblinLoader"`
   - **forge-lite-dev** — Forge Lite Dev Server
     - Summary: Run Expo dev server for ForgeTM Lite mobile app.
     - Owner: vanta-lumin
@@ -97,22 +109,14 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
     - Summary: Verify Sentry and PostHog integration for crash reporting and analytics.
     - Owner: vanta-lumin
     - Command: `cd apps/forge-lite && pnpm telemetry:check`
-  - **forge-lite-release-build** — Forge Lite Release Build
-    - Summary: Build production bundles for iOS, Android, and Web using EAS.
-    - Owner: dregg-embercode
-    - Command: `cd apps/forge-lite && eas build --platform all --profile production`
-  - **forge-lite-release-submit** — Forge Lite Release Submit
-    - Summary: Submit builds to TestFlight and Play Console for testing.
-    - Owner: dregg-embercode
-    - Command: `cd apps/forge-lite && eas submit --platform ios && eas submit --platform android`
-  - **forge-lite-export-data** — Forge Lite Data Export
+  - **forge-lite-export-data** — Forge Lite Export Data
     - Summary: Export user trades and journal data as CSV for compliance and portability.
     - Owner: volt-furnace
-    - Command: `cd apps/forge-lite/api && python -c "from services.export import export_user_data; export_user_data()"`
-  - **forge-lite-docs-update** — Forge Lite Docs Update
-    - Summary: Auto-generate and update README and API documentation.
-    - Owner: launcey-gauge
-    - Command: `cd apps/forge-lite && pnpm docs:generate && cd api && python -c "from main import app; print(app.openapi())" > openapi.json`
+    - Command: `cd apps/forge-lite && pnpm export:data`
+  - **overmind** — Overmind Goblin
+    - Summary: LLM routing and memory management goblin for AI-powered trading assistance.
+    - Owner: volt-furnace
+    - Command: `echo "Overmind goblin executed via GoblinLoader"`
 - Members
   - vanta-lumin — Glyph Scribe
     - Brain: local=[ollama], routers=[deepseek-r1]
@@ -122,17 +126,23 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
       - Accessibility (a11y) compliance
       - CLS/LCP performance budgets and design QA
     - Tools:
-      - Owned: portfolio-dev, portfolio-build, forge-lite-bootstrap, forge-lite-dev, forge-lite-telemetry-check, forge-lite-docs-update
+      - Owned: portfolio-dev, portfolio-build, forge-lite-bootstrap, repo-bootstrap, workspace-health, forge-smithy, forge-lite-dev, forge-lite-telemetry-check
       - Selection Rules:
         - "bootstrap forge lite repo" → forge-lite-bootstrap
         - "setup forge lite environment" → forge-lite-bootstrap
         - "initialize forge lite project" → forge-lite-bootstrap
+        - "bootstrap repository" → repo-bootstrap
+        - "setup development environment" → repo-bootstrap
+        - "check workspace health" → workspace-health
+        - "run health checks" → workspace-health
+        - "setup python environment" → forge-smithy
+        - "python development tooling" → forge-smithy
         - "start portfolio dev server" → portfolio-dev
         - "build portfolio" → portfolio-build
         - "start forge lite UI development" → forge-lite-dev
         - "test UI components" → forge-lite-dev
         - "check telemetry integration" → forge-lite-telemetry-check
-        - "update documentation" → forge-lite-docs-update
+        - "update documentation" → mages-guild-docs-update
     - KPIs: cls, lcp, a11y_score
   - volt-furnace — Socketwright
     - Brain: local=[ollama-coder], routers=[deepseek-r1]
@@ -142,7 +152,7 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
       - Message queues and async processing
       - Idempotency and error budget enforcement
     - Tools:
-      - Owned: forge-lite-api-dev, forge-lite-db-migrate, forge-lite-rls-check, forge-lite-auth-login, forge-lite-market-data-fetch, forge-lite-export-data
+      - Owned: forge-lite-api-dev, forge-lite-db-migrate, forge-lite-rls-check, forge-lite-auth-login, forge-lite-market-data-fetch, forge-lite-export-data, overmind
       - Selection Rules:
         - "start API server" → forge-lite-api-dev
         - "test API endpoints" → forge-lite-api-dev
@@ -152,27 +162,29 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
         - "auth login" → forge-lite-auth-login
         - "fetch market data" → forge-lite-market-data-fetch
         - "export user data" → forge-lite-export-data
+        - "AI trading assistance" → overmind
+        - "LLM routing" → overmind
     - KPIs: p99_latency, error_rate, schema_drift
 
 ### Huntress
 - Charter: Flaky test hunts, regression triage, incident tagging; early-signal scouting, log mining, trend surfacing.
 - Toolbelt:
-  - **forge-lite-test** — Forge Lite Tests
-    - Summary: Run all tests for ForgeTM Lite (frontend + backend).
+  - **huntress-guild-analyze-tests** — Huntress Guild - Analyze Tests
+    - Summary: Analyze test results for flaky tests and patterns using Huntress Guild goblin.
     - Owner: magnolia-nightbloom
-    - Command: `cd apps/forge-lite && pnpm test && cd api && pytest`
-  - **forge-lite-e2e-test** — Forge Lite E2E Tests
-    - Summary: Run end-to-end tests for critical user flows (risk calc, trade journal).
+    - Command: `cd GoblinOS/packages/goblins/huntress-guild && python test.py analyze_tests --project apps/forge-lite`
+  - **huntress-guild-triage-regression** — Huntress Guild - Triage Regression
+    - Summary: Triage test regressions and identify root causes using Huntress Guild goblin.
     - Owner: magnolia-nightbloom
-    - Command: `cd apps/forge-lite && pnpm test:e2e`
-  - **forge-lite-smoke-test** — Forge Lite Smoke Tests
-    - Summary: Run smoke tests on all platforms (iOS, Android, Web) for basic functionality.
+    - Command: `cd GoblinOS/packages/goblins/huntress-guild && python test.py triage_regression --commit HEAD`
+  - **huntress-guild-scout-signals** — Huntress Guild - Scout Signals
+    - Summary: Scout for early signals and emerging trends using Huntress Guild goblin.
     - Owner: magnolia-nightbloom
-    - Command: `cd apps/forge-lite && pnpm test:smoke`
-  - **forge-lite-feedback-export** — Forge Lite Feedback Export
-    - Summary: Export user feedback, bug reports, and feature requests for analysis.
+    - Command: `cd GoblinOS/packages/goblins/huntress-guild && python test.py scout_signals --days 7`
+  - **huntress-guild-report-incidents** — Huntress Guild - Report Incidents
+    - Summary: Generate incident reports and automated tagging using Huntress Guild goblin.
     - Owner: magnolia-nightbloom
-    - Command: `cd apps/forge-lite/api && python -c "from services.feedback import export_feedback; export_feedback()"`
+    - Command: `cd GoblinOS/packages/goblins/huntress-guild && python test.py report_incidents --severity medium`
 - Members
   - magnolia-nightbloom — Vermin Huntress
     - Brain: local=[ollama-coder], routers=[openai]
@@ -182,17 +194,16 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
       - Incident tagging and categorization
       - MTTR reduction for test failures
     - Tools:
-      - Owned: forge-lite-test, forge-lite-e2e-test, forge-lite-smoke-test, forge-lite-feedback-export
+      - Owned: huntress-guild-analyze-tests, huntress-guild-triage-regression, huntress-guild-scout-signals, huntress-guild-report-incidents
       - Selection Rules:
-        - "run tests" → forge-lite-test
-        - "identify flaky tests" → forge-lite-test
-        - "regression check" → forge-lite-test
-        - "run e2e tests" → forge-lite-e2e-test
-        - "test user flows" → forge-lite-e2e-test
-        - "run smoke tests" → forge-lite-smoke-test
-        - "test basic functionality" → forge-lite-smoke-test
-        - "export user feedback" → forge-lite-feedback-export
-        - "analyze bug reports" → forge-lite-feedback-export
+        - "analyze tests" → huntress-guild-analyze-tests
+        - "identify flaky tests" → huntress-guild-analyze-tests
+        - "triage regression" → huntress-guild-triage-regression
+        - "regression check" → huntress-guild-triage-regression
+        - "scout signals" → huntress-guild-scout-signals
+        - "analyze logs" → huntress-guild-scout-signals
+        - "report incidents" → huntress-guild-report-incidents
+        - "analyze bug reports" → huntress-guild-report-incidents
     - KPIs: flaky_rate, mttr_test_failures
   - mags-charietto — Omenfinder
     - Brain: local=[ollama-coder], routers=[gemini]
@@ -209,6 +220,31 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
 
 ### Keepers
 - Charter: Secrets, licenses, SBOM, signatures, backups, attestations.
+- Toolbelt:
+  - **keepers-guild-secrets-audit** — Keepers Guild - Secrets Audit
+    - Summary: Audit API key documentation and .env hygiene using Keepers Guild goblin.
+    - Owner: sentenial-ledgerwarden
+    - Command: `cd GoblinOS/packages/goblins/keepers-guild && python run_keeper.py secrets:audit`
+  - **keepers-guild-security-scan** — Keepers Guild - Security Scan
+    - Summary: Run security compliance checks using Keepers Guild goblin.
+    - Owner: sentenial-ledgerwarden
+    - Command: `cd GoblinOS/packages/goblins/keepers-guild && python run_keeper.py security:scan`
+  - **keepers-guild-storage-cleanup** — Keepers Guild - Storage Cleanup
+    - Summary: Run the weekly storage cleanup routine using Keepers Guild goblin.
+    - Owner: sentenial-ledgerwarden
+    - Command: `cd GoblinOS/packages/goblins/keepers-guild && python run_keeper.py storage:cleanup`
+  - **keepers-guild-system-clean** — Keepers Guild - System Clean
+    - Summary: Perform system-level cache purge using Keepers Guild goblin.
+    - Owner: sentenial-ledgerwarden
+    - Command: `cd GoblinOS/packages/goblins/keepers-guild && python run_keeper.py system:clean`
+  - **keepers-guild-digital-purge** — Keepers Guild - Digital Purge Scanner
+    - Summary: Scan email for service accounts and data trails to identify digital footprint.
+    - Owner: sentenial-ledgerwarden
+    - Command: `cd GoblinOS/packages/goblins/keepers-guild && python digital_purge.py`
+  - **keepers-guild-device-purge** — Keepers Guild - Device Purge
+    - Summary: Clean local device data including caches, cookies, and installed applications.
+    - Owner: sentenial-ledgerwarden
+    - Command: `cd GoblinOS/packages/goblins/keepers-guild && python digital_purge_layer3.py`
 - Members
   - sentenial-ledgerwarden — Sealkeeper
     - Brain: local=[ollama], routers=[deepseek-r1], embeddings=[nomic-embed-text]
@@ -219,8 +255,20 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
       - Code signatures and attestations
       - Backup integrity and recovery
     - Tools:
-      - Owned: None
+      - Owned: keepers-guild-secrets-audit, keepers-guild-security-scan, keepers-guild-storage-cleanup, keepers-guild-system-clean, keepers-guild-digital-purge, keepers-guild-device-purge
       - Selection Rules:
+        - "audit secrets" → keepers-guild-secrets-audit
+        - "check API key hygiene" → keepers-guild-secrets-audit
+        - "run security scan" → keepers-guild-security-scan
+        - "audit compliance" → keepers-guild-security-scan
+        - "cleanup storage" → keepers-guild-storage-cleanup
+        - "weekly cleanup" → keepers-guild-storage-cleanup
+        - "system cleanup" → keepers-guild-system-clean
+        - "clear caches" → keepers-guild-system-clean
+        - "run digital purge" → keepers-guild-digital-purge
+        - "audit my accounts" → keepers-guild-digital-purge
+        - "clean my device" → keepers-guild-device-purge
+        - "purge local data" → keepers-guild-device-purge
         - "rotate secrets" → Brain only (Uses brain + secrets_manage.sh script)
         - "validate SBOM" → Brain only (Uses brain for analysis)
     - KPIs: secrets_rotated, sbom_drift, unsigned_artifacts
@@ -228,14 +276,26 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
 ### Mages
 - Charter: Forecasting, anomaly detection, and quality gates for releases.
 - Toolbelt:
-  - **forge-lite-lint** — Forge Lite Lint
-    - Summary: Run linters for TypeScript and Python code.
+  - **mages-guild-quality-lint** — Mages Guild - Quality Lint
+    - Summary: Run comprehensive quality gates including linting, type checking, and security scans.
     - Owner: launcey-gauge
-    - Command: `cd apps/forge-lite && pnpm lint && cd api && ruff check .`
-  - **forge-lite-docs-update** — Forge Lite Docs Update
-    - Summary: Auto-generate and update README and API documentation.
+    - Command: `cd packages/goblins/mages-guild && python run_mage.py quality:lint`
+  - **mages-guild-vault-validate** — Mages Guild - Vault Validate
+    - Summary: Validate Obsidian vault structure, YAML frontmatter, and linguist attributes.
     - Owner: launcey-gauge
-    - Command: `cd apps/forge-lite && pnpm docs:generate && cd api && python -c "from main import app; print(app.openapi())" > openapi.json`
+    - Command: `cd packages/goblins/mages-guild && python run_mage.py vault:validate`
+  - **mages-guild-anomaly-detect** — Mages Guild - Anomaly Detect
+    - Summary: Detect anomalies in metrics, logs, and system performance.
+    - Owner: grim-rune
+    - Command: `cd packages/goblins/mages-guild && python run_mage.py anomaly:detect`
+  - **mages-guild-forecast-risk** — Mages Guild - Forecast Risk
+    - Summary: Forecast release risk and assess deployment safety.
+    - Owner: hex-oracle
+    - Command: `cd packages/goblins/mages-guild && python run_mage.py forecast:risk`
+  - **mages-guild-docs-update** — Mages Guild - Docs Update
+    - Summary: Auto-generate and update documentation with quality metrics.
+    - Owner: launcey-gauge
+    - Command: `cd packages/goblins/mages-guild && python run_mage.py docs:update`
 - Members
   - hex-oracle — Forecasting Fiend
     - Brain: local=[ollama], routers=[deepseek-r1]
@@ -245,9 +305,12 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
       - Capacity planning and forecasting
       - Forecast accuracy optimization (MAE/MAPE)
     - Tools:
-      - Owned: None
+      - Owned: mages-guild-forecast-risk
       - Selection Rules:
-        - "forecast release risk" → Brain only (Uses brain for predictive modeling)
+        - "forecast release risk" → mages-guild-forecast-risk
+        - "assess deployment safety" → mages-guild-forecast-risk
+        - "predict incident likelihood" → mages-guild-forecast-risk
+        - "capacity planning" → Brain only (Uses brain for predictive modeling)
     - KPIs: forecast_mae, forecast_mape, release_risk_auc
   - grim-rune — Glitch Whisperer
     - Brain: local=[ollama-coder], routers=[deepseek-r1]
@@ -257,9 +320,12 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
       - Pre-production anomaly catching
       - Alert precision and recall optimization
     - Tools:
-      - Owned: None
+      - Owned: mages-guild-anomaly-detect
       - Selection Rules:
-        - "detect anomalies" → Brain only (Uses brain for anomaly detection)
+        - "detect anomalies" → mages-guild-anomaly-detect
+        - "analyze metrics" → mages-guild-anomaly-detect
+        - "check system performance" → mages-guild-anomaly-detect
+        - "auto-ticket creation" → Brain only (Uses brain for anomaly detection)
     - KPIs: anomalies_preprod, alert_precision, alert_recall
   - launcey-gauge — Fine Spellchecker
     - Brain: local=[ollama], routers=[deepseek-r1]
@@ -270,13 +336,13 @@ This document is generated from the YAML and summarizes the Overmind, guilds, me
       - Diátaxis documentation standards
       - PR gate pass rate optimization
     - Tools:
-      - Owned: forge-lite-lint, forge-lite-docs-update
+      - Owned: mages-guild-quality-lint, mages-guild-docs-update
       - Selection Rules:
-        - "run linters" → forge-lite-lint
-        - "check code quality" → forge-lite-lint
-        - "validate PR" → forge-lite-lint
-        - "update documentation" → forge-lite-docs-update
-        - "generate API docs" → forge-lite-docs-update
+        - "run linters" → mages-guild-quality-lint
+        - "check code quality" → mages-guild-quality-lint
+        - "validate PR" → mages-guild-quality-lint
+        - "update documentation" → mages-guild-docs-update
+        - "generate API docs" → mages-guild-docs-update
     - KPIs: pr_gate_pass_rate, violations_per_kloc
 
 ---

@@ -1,91 +1,70 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-// Environment variables for AI providers (optional):
-// - OPENAI_API_KEY: OpenAI API key for GPT-4/GPT-3.5 models
-// - ANTHROPIC_API_KEY: Anthropic API key for Claude models
-// - GEMINI_API_KEY: Google Gemini API key
-// If not set, only local Ollama provider will be available
+mod goblin_runtime;
+mod ipc;
 
-mod commands;
-mod config;
-mod cost_tracker;
-mod memory;
-mod orchestration;
-mod providers;
-
-use commands::GoblinRuntime;
+use goblin_runtime::{start_runtime, stop_runtime, status, send_event};
+use ipc::{get_goblins, get_providers, get_provider_models, get_stats, get_history, get_cost_summary, parse_orchestration, execute_orchestration, store_api_key, get_api_key, clear_api_key, set_provider_api_key, execute_task};
 use std::sync::Arc;
-use tauri::Manager;
-use tokio::sync::Mutex;
 
-#[tokio::main]
-async fn main() {
-    // Get app data directory for SQLite database
-    let app_data_dir = dirs::home_dir()
-        .expect("Failed to get home directory")
-        .join(".goblinos");
+/// A lightweight manager that will own runtime-related resources.
+/// For now this is a placeholder; later it can hold child process handles,
+/// napi-rs bindings, logging handles, sockets, etc.
+#[derive(Clone)]
+pub struct GoblinRuntimeManager {
+    // placeholder for real runtime resources
+    pub name: String,
+    pub child_process: Option<std::sync::Arc<std::sync::Mutex<Option<tokio::process::Child>>>>,
+}
 
-    if let Err(e) = std::fs::create_dir_all(&app_data_dir) {
-        eprintln!("Failed to create app data directory: {}", e);
+impl GoblinRuntimeManager {
+    pub fn new() -> Self {
+        GoblinRuntimeManager {
+            name: "goblin-runtime-manager".into(),
+            child_process: None,
+        }
     }
+}
 
-    let db_path = app_data_dir.join("goblin-memory.db");
-    let db_path_str = db_path.to_str().expect("Invalid db path");
-    println!("Using database at: {}", db_path_str);
+// IPC commands live in `src/ipc.rs` and forward to goblin_runtime.
 
-    // Path to goblins.yaml (relative to workspace root)
-    let config_path = std::env::current_dir()
-        .expect("Failed to get current directory")
-        .join("../../goblins.yaml");
-    let config_path_str = config_path.to_str().expect("Invalid config path");
-    println!("Loading goblins config from: {}", config_path_str);
+fn main() {
+    let manager = Arc::new(GoblinRuntimeManager::new());
 
-    // Initialize GoblinRuntime
-    let runtime = Arc::new(Mutex::new(
-        GoblinRuntime::new(db_path_str, config_path_str)
-            .await
-            .expect("Failed to initialize GoblinRuntime"),
-    ));
-
-    // Build Tauri app with optional plugins gated by cargo features
-    let mut builder = tauri::Builder::default();
-
-    #[cfg(feature = "opener")]
-    {
-        builder = builder.plugin(tauri_plugin_opener::init());
-    }
-
-    #[cfg(feature = "shell")]
-    {
-        builder = builder.plugin(tauri_plugin_shell::init());
-    }
-
-    builder
-        .manage(runtime)
-        .invoke_handler(tauri::generate_handler![
-            commands::get_goblins,
-            commands::get_providers,
-            commands::get_provider_models,
-            commands::execute_task,
-            commands::get_history,
-            commands::get_stats,
-            commands::get_cost_summary,
-            commands::parse_orchestration,
-            // Secure key storage
-            commands::store_api_key,
-            commands::get_api_key,
-            commands::clear_api_key,
-            commands::set_provider_api_key,
-        ])
+    tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
+        .manage(manager)
         .setup(|app| {
-            #[cfg(debug_assertions)]
-            {
-                let window = app.get_webview_window("main").unwrap();
-                window.open_devtools();
-            }
+            let _window = tauri::WindowBuilder::new(app, "main")
+                .title("GoblinOS Desktop")
+                .inner_size(1200.0, 800.0)
+                .min_inner_size(800.0, 600.0)
+                .center()
+                .build()?;
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![
+            // existing runtime control commands
+            start_runtime,
+            stop_runtime,
+            send_event,
+            status,
+            // new IPC commands
+            get_goblins,
+            get_providers,
+            get_provider_models,
+            get_stats,
+            get_history,
+            get_cost_summary,
+            parse_orchestration,
+            store_api_key,
+            get_api_key,
+            clear_api_key,
+            set_provider_api_key,
+            execute_orchestration,
+            execute_task
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

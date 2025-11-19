@@ -1,10 +1,11 @@
----
-title: GoblinOS
+---title: GoblinOS
 type: reference
 project: GoblinOS
 status: reviewed
 owner: GoblinOS
 goblin_name: GoblinOS Platform
+description: "README"
+
 ---
 
 **AI Agents & Automation System** - Monorepo tooling, agents, and workspace health automation for the ForgeMonorepo.
@@ -162,6 +163,21 @@ GoblinOS is hardened with:
 - **[📊 HARDENING_SUMMARY.md](./docs/HARDENING_SUMMARY.md)** - What was implemented
 
 ### Test helpers & pointers
+
+GoblinOS uses Vitest with comprehensive test infrastructure:
+
+**Test Environment Setup:**
+
+- **Vitest + jsdom** - React component testing with DOM simulation
+- **Conditional mocking** - Browser APIs mocked only when needed
+- **Server availability checks** - Integration tests skip gracefully when services unavailable
+- **Bridge API safety** - Prevents `process.exit()` during test execution
+
+**Test Configuration:**
+
+- Root config: `vitest.config.ts` with jest-dom setup for React testing
+- Component tests: `@vitest-environment jsdom` for DOM-dependent tests
+- Integration tests: Server health checks before test execution
 
 The Overmind bridge package contains test helpers for asserting KPI events. See:
 

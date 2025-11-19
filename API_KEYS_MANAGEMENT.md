@@ -1,3 +1,7 @@
+---
+description: "API_KEYS_MANAGEMENT"
+---
+
 # API Keys Management
 
 This document explains how to securely manage API keys for GoblinOS and GoblinOS Desktop.

@@ -15,7 +15,7 @@ import type {
 	OrchestrationPlan,
 	RuntimeClient,
 	StreamEvent,
-} from "../api/runtime-client";
+} from "../api/tauri-client";
 import { OrchestrationBuilder } from "./OrchestrationBuilder";
 
 interface TaskExecutorProps {
@@ -162,6 +162,45 @@ export function TaskExecutor({
 			}
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Failed to execute task");
+			setIsExecuting(false);
+		}
+	};
+
+	const handleBuilderRun = async (syntax: string) => {
+		if (!selectedGoblin) return;
+		setIsExecuting(true);
+		setOutput("🎭 Executing orchestration plan...\n\n");
+		try {
+			const result = await client.executeOrchestration(syntax, selectedGoblin.id);
+			// Display results
+			let resultOutput = `✅ Orchestration complete\n\n`;
+			resultOutput += `Total steps: ${result.steps.length}\n`;
+			resultOutput += `Status: ${result.status}\n\n`;
+
+			for (const step of result.steps) {
+				const icon =
+					step.status === "completed"
+						? "✅"
+						: step.status === "failed"
+							? "❌"
+							: step.status === "skipped"
+								? "⏭️"
+								: "⏸️";
+				resultOutput += `${icon} ${step.goblinId}: ${step.task}\n`;
+				if (step.result) {
+					resultOutput += `   Duration: ${step.result.duration}ms\n`;
+					if (step.result.error) {
+						resultOutput += `   Error: ${step.result.error}\n`;
+					}
+				}
+				resultOutput += "\n";
+			}
+
+			setOutput(resultOutput);
+			if (onTaskComplete) onTaskComplete();
+		} catch (err) {
+			setError(err instanceof Error ? err.message : String(err));
+		} finally {
 			setIsExecuting(false);
 		}
 	};
@@ -329,6 +368,7 @@ export function TaskExecutor({
 						setTask(syntax);
 						setShowBuilder(false);
 					}}
+					onRun={handleBuilderRun}
 					onClose={() => setShowBuilder(false)}
 				/>
 			)}

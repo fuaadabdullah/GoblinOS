@@ -3,15 +3,20 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { execa } from "execa";
 import yaml from "yaml";
+import { getToolSelector } from "@goblinos/tool-selector";
+import {
+	type TaskDecisionAuditEvent,
+	type ToolExecutionAuditEvent,
+	sendSignedAudit,
+} from "./audit-client.js";
 import { MemoryStore } from "./memory-store.js";
 import { buildSystemPrompt, buildTaskPrompt } from "./prompt-templates.js";
 import { AnthropicProvider } from "./providers/anthropic-provider.js";
+import { DeepSeekProvider } from "./providers/deepseek-provider.js";
 import { GeminiProvider } from "./providers/gemini-provider.js";
 import { OllamaProvider } from "./providers/ollama-provider.js";
 import { OpenAIProvider } from "./providers/openai-provider.js";
-import { DeepSeekProvider } from "./providers/deepseek-provider.js";
 import { RAGService } from "./rag-service.js";
-import { sendSignedAudit, type TaskDecisionAuditEvent, type ToolExecutionAuditEvent } from "./audit-client.js";
 import type {
 	GoblinResponse,
 	GoblinTask,
@@ -191,13 +196,17 @@ export class GoblinRuntime {
 		console.log(`✅ GoblinRuntime ready with ${this.goblins.size} goblins`);
 
 		// Check audit service configuration
-		const auditUrl = process.env.AUDIT_URL || 'http://localhost:19001/audit';
-		const hasAuditKeys = !!(process.env.SECRET_KEY_BASE64 && process.env.PUBKEY_BASE64) || !!process.env.KMS_KEY_ID;
+		const auditUrl = process.env.AUDIT_URL || "http://localhost:19001/audit";
+		const hasAuditKeys =
+			!!(process.env.SECRET_KEY_BASE64 && process.env.PUBKEY_BASE64) ||
+			!!process.env.KMS_KEY_ID;
 
 		if (hasAuditKeys) {
 			console.log(`✅ Audit logging enabled (${auditUrl})`);
 		} else {
-			console.log(`⚠️  Audit logging disabled - set SECRET_KEY_BASE64/PUBKEY_BASE64 or KMS_KEY_ID`);
+			console.log(
+				`⚠️  Audit logging disabled - set SECRET_KEY_BASE64/PUBKEY_BASE64 or KMS_KEY_ID`,
+			);
 		}
 		console.log("");
 	}
@@ -219,15 +228,15 @@ export class GoblinRuntime {
 			event_id: randomUUID(),
 			occurred_at: new Date().toISOString(),
 			actor: task.goblin,
-			action: 'task_started',
+			action: "task_started",
 			task: task.task,
-			reasoning: '',
+			reasoning: "",
 			success: false, // Will be updated
 			duration_ms: 0, // Will be updated
 			context: task.context,
 		};
-		sendSignedAudit(taskStartEvent).catch(err =>
-			console.warn('Failed to send task start audit event:', err)
+		sendSignedAudit(taskStartEvent).catch((err) =>
+			console.warn("Failed to send task start audit event:", err),
 		);
 
 		console.log(`🤖 ${goblin.title || task.goblin} is analyzing task...`);
@@ -250,8 +259,27 @@ export class GoblinRuntime {
 				temperature: 0.7,
 			});
 
-			// Check if tool execution is needed
-			if (!task.dryRun) {
+			// If dry-run, use ToolSelector to suggest a tool but don't execute it
+			if (task.dryRun) {
+				try {
+					const selector = getToolSelector();
+					const suggested = selector.autoSelectToolCommand(goblin.id, task.task);
+					if (suggested && suggested.tool) {
+						toolResult = {
+							tool: suggested.tool,
+							command: suggested.command,
+							output: "(dry-run) command not executed",
+							exitCode: 0,
+							success: true,
+						} as ToolExecutionResult;
+					}
+				} catch (err: any) {
+					// Permission denied or other selector error - don't execute
+					console.warn(`ToolSelector error (dry-run) for ${goblin.id}: ${err.message}`);
+					toolResult = null;
+				}
+			} else {
+				// Check if tool execution is needed
 				toolResult = await this.executeToolIfNeeded(
 					goblin,
 					task.task,
@@ -300,7 +328,7 @@ export class GoblinRuntime {
 			event_id: randomUUID(),
 			occurred_at: new Date().toISOString(),
 			actor: task.goblin,
-			action: success ? 'task_completed' : 'task_failed',
+			action: success ? "task_completed" : "task_failed",
 			task: task.task,
 			reasoning,
 			success,
@@ -308,8 +336,8 @@ export class GoblinRuntime {
 			kpis: response.kpis,
 			context: task.context,
 		};
-		sendSignedAudit(taskCompleteEvent).catch(err =>
-			console.warn('Failed to send task completion audit event:', err)
+		sendSignedAudit(taskCompleteEvent).catch((err) =>
+			console.warn("Failed to send task completion audit event:", err),
 		);
 
 		return response;
@@ -410,15 +438,28 @@ export class GoblinRuntime {
 		const brain = goblin.brain;
 
 		// If the goblin specifies router order, try to honor it in order
-		if (brain?.routers && Array.isArray(brain.routers) && brain.routers.length > 0) {
+		if (
+			brain?.routers &&
+			Array.isArray(brain.routers) &&
+			brain.routers.length > 0
+		) {
 			for (const router of brain.routers) {
 				const key = String(router).toLowerCase();
 				// Direct match
 				if (this.providers.has(key)) return this.providers.get(key)!;
 				// Common aliases
-				if (key === "google" && this.providers.has("gemini")) return this.providers.get("gemini")!;
-				if ((key === "claude" || key === "anthropic") && this.providers.has("anthropic")) return this.providers.get("anthropic")!;
-				if ((key === "local" || key === "ollama") && this.providers.has("ollama")) return this.providers.get("ollama")!;
+				if (key === "google" && this.providers.has("gemini"))
+					return this.providers.get("gemini")!;
+				if (
+					(key === "claude" || key === "anthropic") &&
+					this.providers.has("anthropic")
+				)
+					return this.providers.get("anthropic")!;
+				if (
+					(key === "local" || key === "ollama") &&
+					this.providers.has("ollama")
+				)
+					return this.providers.get("ollama")!;
 			}
 		}
 
@@ -461,42 +502,53 @@ export class GoblinRuntime {
 			if (!hasAction) return null;
 		}
 
-		// Find matching tool from goblin's selection rules
-		const rule = goblin.tools?.selection_rules?.find((r: any) =>
-			task.toLowerCase().includes(r.trigger.toLowerCase()),
-		);
+		// Use the shared ToolSelector to resolve tool and command for goblin intent
+		const selector = getToolSelector();
+		let selected: { tool: string | null; command: string | null; reason: string };
+		try {
+			selected = selector.autoSelectToolCommand(goblin.id, task);
+		} catch (err: any) {
+			// Permission error or other selection error - handle gracefully
+			console.warn(`ToolSelector error for ${goblin.id}: ${err.message}`);
+			return null;
+		}
 
-		if (!rule?.tool) return null;
+		if (!selected || !selected.tool) return null;
 
-		// Find guild and tool
+	const toolId = selected.tool;
+
+		// Find guild and tool (for name & auditing metadata)
 		const guild = this.guilds.find((g) => g.name === goblin.guild);
 		if (!guild?.toolbelt) return null;
 
-		const tool = guild.toolbelt.find((t: any) => t.id === rule.tool);
-		if (!tool) return null;
+		const tool = guild.toolbelt.find((t: any) => t.id === toolId);
+		if (!tool) {
+			// If the tool is not found on the guild toolbelt, return null
+			return null;
+		}
 
 		// Audit: Tool selected
 		const toolSelectEvent: ToolExecutionAuditEvent = {
 			event_id: randomUUID(),
 			occurred_at: new Date().toISOString(),
 			actor: goblin.id,
-			action: 'tool_selected',
+			action: "tool_selected",
 			tool_id: tool.id,
 			command: tool.command,
 			success: false, // Will be updated
 			duration_ms: 0, // Will be updated
 			resource: {
-				type: 'tool',
+				type: "tool",
 				id: tool.id,
 			},
 			context: {
 				task,
-				rule_trigger: rule.trigger,
+				selection_reason: selected.reason,
 				guild: goblin.guild,
 			},
 		};
-		sendSignedAudit(toolSelectEvent).catch(err =>
-			console.warn('Failed to send tool selection audit event:', err)
+		sendSignedAudit(toolSelectEvent).catch((err) =>
+			console.warn("Failed to send tool selection audit event:", err),
 		);
 
 		console.log(`\n🔧 Executing tool: ${tool.name}`);
@@ -523,13 +575,13 @@ export class GoblinRuntime {
 				event_id: randomUUID(),
 				occurred_at: new Date().toISOString(),
 				actor: goblin.id,
-				action: 'tool_executed',
+				action: "tool_executed",
 				tool_id: tool.id,
 				command: tool.command,
 				success,
 				duration_ms: Date.now() - toolStartTime,
 				resource: {
-					type: 'tool',
+					type: "tool",
 					id: tool.id,
 				},
 				context: {
@@ -538,8 +590,8 @@ export class GoblinRuntime {
 					exit_code: exitCode,
 				},
 			};
-			sendSignedAudit(toolCompleteEvent).catch(err =>
-				console.warn('Failed to send tool execution audit event:', err)
+			sendSignedAudit(toolCompleteEvent).catch((err) =>
+				console.warn("Failed to send tool execution audit event:", err),
 			);
 
 			return {
@@ -555,13 +607,13 @@ export class GoblinRuntime {
 				event_id: randomUUID(),
 				occurred_at: new Date().toISOString(),
 				actor: goblin.id,
-				action: 'tool_failed',
+				action: "tool_failed",
 				tool_id: tool.id,
 				command: tool.command,
 				success: false,
 				duration_ms: Date.now() - toolStartTime,
 				resource: {
-					type: 'tool',
+					type: "tool",
 					id: tool.id,
 				},
 				context: {
@@ -569,8 +621,8 @@ export class GoblinRuntime {
 					error: error.message,
 				},
 			};
-			sendSignedAudit(toolFailEvent).catch(err =>
-				console.warn('Failed to send tool failure audit event:', err)
+			sendSignedAudit(toolFailEvent).catch((err) =>
+				console.warn("Failed to send tool failure audit event:", err),
 			);
 
 			return {
@@ -697,6 +749,7 @@ export {
 	type OrchestrationPlan,
 	type OrchestrationProgress,
 } from "./orchestrator.js";
+export { GoblinLoader } from "./goblin-loader.js";
 export {
 	CostTracker,
 	calculateCost,

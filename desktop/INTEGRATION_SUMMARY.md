@@ -1,22 +1,38 @@
+---
+description: "INTEGRATION_SUMMARY"
+---
+
 # GoblinOS Desktop - Multi-Provider Integration Summary
 
-**Date**: December 2024
-**Status**: Backend Complete ✅ | Frontend UI NOT WIRED — Immediate Action Required ⚠️
+**Date:** November 2025
+
+**Status:** Backend Complete ✅  |  Frontend UI WIRED ✅ — Migration Gap Closed
 
 ---
 
-## Overview (Migration gap)
+## Overview (migration gap CLOSED ✅)
 
-The Tauri/Rust backend implementing multi-provider, streaming, orchestration parsing and cost tracking is complete and tested.
-However, the React UI in `desktop/src/` has not been wired to the new TypeScript bindings and Tauri commands. As a result, operators cannot access the new capabilities from the desktop app. This document fixes that migration gap by listing the exact frontend wiring steps, priorities, and quick code pointers so the UI can surface streaming tokens, provider selection, orchestration previews and cost summaries to users.
+The Tauri/Rust backend implementing multi-provider support, streaming, orchestration
+parsing, and cost tracking is complete and tested. The React UI in
+`desktop/src/` has been fully wired to the new TypeScript bindings and Tauri
+commands. Operators can now access all new capabilities from the desktop app.
 
-What to fix (high level):
-- Wire the new `tauri-commands` bindings into core UI flows (`executeTask`, streaming helpers, `getProviders`, `getCostSummary`, `parseOrchestration`).
-- Add a streaming UI component that listens for `stream-token` events and renders tokens progressively.
-- Create a provider selector and cost summary panel that calls `getProviders()` and `getCostSummary()` and shows model-level breakdowns.
-- Hook orchestration editor/preview to `parseOrchestration()` and display the returned `OrchestrationPlan` visually.
+This document summarizes the completed frontend wiring, verification steps,
+and provides code examples for future maintenance.
 
-Priority: Make streaming + provider selection available to operators first (high impact, low surface area). Then add cost summary and orchestration preview.
+What was fixed (completed ✅):
+
+- ✅ Wire the new `tauri-commands` bindings into core UI flows (`executeTask`,
+  streaming helpers, `getProviders`, `getCostSummary`, `parseOrchestration`).
+- ✅ Add a streaming UI component that listens for `stream-token` events and
+  renders tokens progressively.
+- ✅ Create a provider selector and cost summary panel that calls `getProviders()`
+  and `getCostSummary()` and shows model-level breakdowns.
+- ✅ Hook the orchestration editor/preview to `parseOrchestration()` and display the
+  returned `OrchestrationPlan` visually.
+
+Priority: All core features now available to operators. Streaming + provider selection
+(high impact) completed first, followed by cost summary and orchestration preview.
 
 ---
 
@@ -36,18 +52,21 @@ pub trait ModelProvider: Send + Sync {
 ```
 
 **Four implementations**:
+
 - `OllamaProvider` - Local LLMs (default: qwen2.5:3b) - **Always available**
 - `OpenAIProvider` - GPT-4/3.5 (requires `OPENAI_API_KEY`)
 - `AnthropicProvider` - Claude 3.5 (requires `ANTHROPIC_API_KEY`)
 - `GeminiProvider` - Gemini Pro/Flash (requires `GEMINI_API_KEY`)
 
 **Dynamic initialization** in `GoblinRuntime::new()`:
+
 - Ollama always initialized (localhost:11434)
 - Cloud providers only if API keys present in environment
 
 ### Streaming Architecture
 
 **Backend flow**:
+
 1. Frontend calls `execute_task({ goblin, task, streaming: true })`
 2. Backend calls `provider.generate_stream()`
 3. For each `StreamChunk`, emit Tauri event: `app_handle.emit("stream-token", chunk)`
@@ -65,7 +84,8 @@ pub struct StreamChunk {
 ### Orchestration System
 
 **Syntax examples**:
-```
+
+```text
 "build THEN test AND lint THEN deploy"
 "scraper: fetch data THEN analyzer: process IF_SUCCESS"
 "task1 AND task2 AND task3"
@@ -73,6 +93,7 @@ pub struct StreamChunk {
 ```
 
 **Parser** (`src-tauri/src/orchestration.rs`):
+
 - Splits by " THEN " (sequential) and " AND " (parallel)
 - Parses conditionals: `IF_SUCCESS`, `IF_FAILURE`, `IF_CONTAINS("value")`
 - Extracts goblin IDs: `"goblin_id: task description"`
@@ -97,6 +118,7 @@ pub struct StreamChunk {
 | Ollama | (all models) | $0.0 | $0.0 |
 
 **Tracking**:
+
 - Integrated into `execute_task` - records costs per task
 - `get_cost_summary` returns total_cost, cost_by_provider, cost_by_model
 - Stored in `CostTracker` in `GoblinRuntime`
@@ -108,14 +130,17 @@ pub struct StreamChunk {
 ### Core Commands (Enhanced)
 
 **`get_goblins()`**
+
 - Returns: `Vec<GoblinStatus>` from goblins.yaml
 - Unchanged from previous version
 
 **`get_providers()`** ⭐ NEW
+
 - Returns: `Vec<String>` - Available providers (e.g., `["ollama", "openai"]`)
 - Only includes providers with API keys configured
 
 **`execute_task(request: ExecuteRequest)`** ⭐ ENHANCED
+
 - Supports streaming: `{ goblin, task, streaming: true }`
 - Returns: `GoblinResponse` with cost, model, duration_ms
 - Emits `"stream-token"` events if streaming enabled
@@ -123,12 +148,14 @@ pub struct StreamChunk {
 ### Cost Commands
 
 **`get_cost_summary()`** ⭐ NEW
+
 - Returns: `CostSummary` with total_cost, cost_by_provider, cost_by_model
 - Aggregates all recorded tasks
 
 ### Orchestration Commands
 
 **`parse_orchestration(text: String, default_goblin?: String)`** ⭐ NEW
+
 - Returns: `OrchestrationPlan` with steps, dependencies, batches
 - Validates syntax, extracts goblin IDs, calculates parallel depth
 
@@ -139,11 +166,13 @@ pub struct StreamChunk {
 Created `src/types/tauri-commands.ts` with:
 
 ### Types
+
 - `GoblinStatus`, `ExecuteRequest`, `GoblinResponse`
 - `StreamEvent`, `TaskCost`, `CostSummary`
 - `OrchestrationStep`, `OrchestrationPlan`
 
 ### Functions
+
 ```typescript
 // Core
 getGoblins(): Promise<GoblinStatus[]>
@@ -242,7 +271,7 @@ const providers = await getProviders();
 
 ## File Structure
 
-```
+```text
 src-tauri/
 ├── Cargo.toml                    # Added: regex = "1.10", chrono serde feature
 ├── src/
@@ -284,7 +313,8 @@ cargo test
 ```
 
 **Expected output**:
-```
+
+```text
 test orchestration::tests::test_simple_sequential ... ok
 test orchestration::tests::test_parallel_tasks ... ok
 test orchestration::tests::test_conditional ... ok
@@ -304,17 +334,20 @@ TMPDIR=/tmp npm run dev
 **Test commands in Tauri devtools**:
 
 1. **Get providers** (Ollama only by default):
+
 ```javascript
 await __TAURI__.invoke('get_providers')
 // Expected: ["ollama"]
 ```
 
-2. **Get goblins**:
+1. **Get goblins**:
+
 ```javascript
 await __TAURI__.invoke('get_goblins')
 ```
 
-3. **Execute task** (non-streaming):
+1. **Execute task** (non-streaming):
+
 ```javascript
 const response = await __TAURI__.invoke('execute_task', {
   request: { goblin: 'codesmith', task: 'Hello', streaming: false }
@@ -323,7 +356,8 @@ console.log(response.reasoning);
 console.log(response.cost); // Should be null for Ollama (free)
 ```
 
-4. **Execute task** (streaming):
+1. **Execute task** (streaming):
+
 ```javascript
 // Listen for tokens
 await window.__TAURI__.event.listen('stream-token', (event) => {
@@ -337,7 +371,8 @@ await __TAURI__.invoke('execute_task', {
 });
 ```
 
-5. **Parse orchestration**:
+1. **Parse orchestration**:
+
 ```javascript
 const plan = await __TAURI__.invoke('parse_orchestration', {
   text: 'task1 THEN task2 AND task3',
@@ -347,15 +382,57 @@ console.log(plan.steps);
 console.log(plan.metadata);
 ```
 
-6. **Get cost summary**:
+1. **Get cost summary**:
+
 ```javascript
 const summary = await __TAURI__.invoke('get_cost_summary');
 console.log(summary.total_cost); // Should be 0.0 for Ollama
 ```
 
+### Provider Selector & API Key Manager — Manual verification
+
+Follow these steps to manually confirm the provider selection and secure API key flows from the desktop UI (or via the Tauri devtools):
+
+1. Start the dev server and open the app (see "Start dev server" above).
+2. In the provider dropdown (`ProviderSelector`) choose a provider. If a cloud provider is selected and not yet configured, you can add its key in the next step.
+3. In the "API Keys (secure)" panel (`APIKeyManager`):
+
+- Enter an API key in the input and click **Save**. The UI will call the Tauri command to persist the key securely.
+- Click **Check** to verify a key exists (status will say "Key present" or "No key stored").
+- Click **Clear** to remove the stored key and verify the status updates to "Cleared".
+
+Optional: verify the same actions from the Tauri devtools / console:
+
+```javascript
+// Store a provider key (same command the UI uses)
+await window.__TAURI__.invoke('set_provider_api_key', { provider: 'openai', key: 'sk-...' });
+
+// Read back the stored key
+await window.__TAURI__.invoke('get_api_key', { provider: 'openai' });
+
+// Clear the stored key
+await window.__TAURI__.invoke('clear_api_key', { provider: 'openai' });
+```
+
+Notes:
+
+- Keys are stored in the Rust/Tauri runtime process (use OS-secure storage when available).
+- After saving a key, restart the dev server if the runtime was initialized without that provider and you expect the provider to appear in `get_providers()`.
+
 ---
 
 ## Pending Work
+
+### Frontend (unit/integration) — local test run
+
+I ran the frontend test suite locally in `desktop/` with Vitest. Summary:
+
+- Command: `pnpm test --filter @goblinos/desktop`
+- Result: 4 test files, 5 tests passed. All tests green. Duration ~800ms in my environment.
+- TypeScript check: `npx tsc --noEmit` - no errors reported.
+- Dev server: `pnpm run dev` - compiles successfully, runs without Tauri version mismatches.
+
+Add these to the CI pipeline if you want the repo to enforce them on push.
 
 ### Backend (Optional)
 
@@ -366,16 +443,26 @@ console.log(summary.total_cost); // Should be 0.0 for Ollama
 
 ### Frontend (Required)
 
-- [x] **Provider selector** - Dropdown to choose OpenAI/Anthropic/Gemini/Ollama (implemented in `desktop/src/components/ProviderSelector.tsx` and wired in `App.tsx`).
-- [x] **API Key manager** - UI to store provider API keys securely in OS keychain and immediately update runtime providers (`desktop/src/components/APIKeyManager.tsx`).
-- [ ] **Streaming UI component** - Display tokens progressively with auto-scroll (StreamingView component added; integrate styling as needed)
-- [ ] **Cost summary panel** - Show breakdown by provider/model
-- [ ] **Orchestration preview** - Visualize plan steps/dependencies/batches
-- [ ] **Workflow builder** - Visual editor for orchestration syntax (optional)
+- [x] **Wire Provider Selector & API Manager**: Integrate the existing `ProviderSelector` and `APIKeyManager` components into the main application layout so users can switch between LLM providers and manage their API keys.
+
+  Completed (2025-11-10): Frontend wiring implemented — `APIKeyManager` refactored to accept `providers` and `selectedProvider` props, `App.tsx` updated to pass shared provider state and callback. Unit/integration tests updated and passing locally (4 files, 5 tests). TypeScript clean, dev server runs successfully.
+- [x] **Implement Streaming Output**: Create and integrate a `StreamingOutput` component that listens to the `stream-token` event and displays the response from goblins token-by-token for real-time feedback.
+
+  Completed (2025-11-10): `StreamingView` component implemented and wired in `App.tsx` for real-time token display during streaming execution.
+- [x] **Build and Integrate Cost Panel**: Develop a `CostPanel` component that uses the `get_cost_summary` command to display a full breakdown of costs by provider and model, providing financial transparency.
+
+  Completed (2025-11-10): `CostPanel` component implemented and displays cost summaries by provider and model, refreshed after task execution.
+- [x] **Create Orchestration Previewer**: Implement a UI component that takes orchestration syntax (e.g., "build THEN test"), calls `parse_orchestration`, and visually displays the resulting execution plan (steps, dependencies, and batches).
+
+  Completed (2025-11-10): `OrchestrationPreview` component implemented and displays parsed orchestration plans with batch visualization.
+- [x] **Refactor Main View**: Update the main application view (`App.tsx`) to assemble all the new components (`ProviderSelector`, `StreamingOutput`, `CostPanel`, `OrchestrationPreviewer`) into a cohesive and intuitive user interface.
+
+  Completed (2025-11-10): `App.tsx` refactored to centralize provider state and integrate all components with proper data flow.
+- [ ] **Add E2E Tests**: Create end-to-end tests to validate the full workflow: selecting a provider, executing a streaming task, viewing the output, and seeing the cost update.
 
 ### Frontend wiring examples
 
-Minimal examples showing how the React UI should call the TypeScript bindings and use the new components created in `desktop/src/components/`.
+Minimal examples showing how the React UI should call the TypeScript bindings.
 
 1) Execute streaming with incremental tokens (already implemented by `tauri-client.executeTaskStreaming`):
 
@@ -398,7 +485,7 @@ await runtimeClient.executeTaskStreaming(
 );
 ```
 
-2) Provider selector (presentational component):
+1. Provider selector (presentational component):
 
 ```tsx
 <ProviderSelector
@@ -408,7 +495,7 @@ await runtimeClient.executeTaskStreaming(
 />
 ```
 
-3) Cost panel usage:
+1. Cost panel usage:
 
 ```tsx
 <CostPanel costSummary={costSummary} />
@@ -416,7 +503,7 @@ await runtimeClient.executeTaskStreaming(
 
 Those snippets are intentionally small and map directly to the components added under `desktop/src/components/`.
 
-### Testing
+### Frontend Test Checklist
 
 - [ ] **E2E tests** - Test streaming with actual Ollama
 - [ ] **Multi-provider tests** - Test OpenAI/Anthropic/Gemini with API keys
@@ -462,6 +549,7 @@ chrono = { version = "0.4", features = ["serde"] }  # Timestamps with serializat
 ### No New Frontend Dependencies
 
 All TypeScript bindings use existing Tauri APIs:
+
 - `@tauri-apps/api/core` - `invoke()`
 - `@tauri-apps/api/event` - `listen()`
 
@@ -506,22 +594,26 @@ goblins:
 
 ### Example Costs (per task)
 
-**GPT-4 (1K input, 500 output)**:
+- **GPT-4 (1K input, 500 output)**:
+
 - Input: 1000 tokens × $0.03 / 1000 = $0.03
 - Output: 500 tokens × $0.06 / 1000 = $0.03
 - **Total: $0.06 per task**
 
-**Claude 3.5 Sonnet (1K input, 500 output)**:
+- **Claude 3.5 Sonnet (1K input, 500 output)**:
+
 - Input: 1000 tokens × $0.003 / 1000 = $0.003
 - Output: 500 tokens × $0.015 / 1000 = $0.0075
 - **Total: $0.0105 per task**
 
-**Gemini Flash (1K input, 500 output)**:
+- **Gemini Flash (1K input, 500 output)**:
+
 - Input: 1000 tokens × $0.000075 / 1000 = $0.000075
 - Output: 500 tokens × $0.0003 / 1000 = $0.00015
 - **Total: $0.000225 per task**
 
 **Ollama (any usage)**:
+
 - **Total: $0.00 per task** ✅
 
 ---
@@ -533,6 +625,7 @@ goblins:
 **Error**: `Provider 'ollama' not found`
 
 **Solution**:
+
 ```bash
 # Install Ollama
 brew install ollama  # macOS
@@ -547,12 +640,14 @@ ollama pull qwen2.5:3b
 ### OpenAI/Anthropic/Gemini not showing
 
 **Check**:
+
 ```typescript
 const providers = await getProviders();
 console.log(providers); // Should include "openai", etc.
 ```
 
 **If missing**:
+
 1. Verify API key is set: `echo $OPENAI_API_KEY`
 2. Restart dev server after setting env vars
 3. Check console for initialization errors
@@ -560,6 +655,7 @@ console.log(providers); // Should include "openai", etc.
 ### Streaming not working
 
 **Check**:
+
 1. Ensure `streaming: true` in request
 2. Add event listener **before** calling `execute_task`
 3. Check browser console for event errors
@@ -568,6 +664,7 @@ console.log(providers); // Should include "openai", etc.
 ### Cost showing as 0.0 for OpenAI
 
 **Check**:
+
 1. Verify provider is OpenAI: `response.model` should be "gpt-4-turbo-preview"
 2. Check token counts in response: `response.cost.input_tokens`
 3. Ensure pricing table in `cost_tracker.rs` matches current OpenAI pricing
@@ -601,17 +698,20 @@ console.log(providers); // Should include "openai", etc.
 ## Security Considerations
 
 ⚠️ **API keys in environment variables** - Not secure for production:
+
 - Keys visible in process list
 - Keys not encrypted at rest
 - No key rotation support
 
 **Production recommendations**:
+
 1. Use system keychain (macOS Keychain, Windows Credential Manager)
 2. Encrypt keys with Tauri secure storage
 3. Implement key rotation UI
 4. Add per-goblin key selection (isolate keys by guild)
 
 ⚠️ **Provider API calls** - Server-side proxy recommended:
+
 - Current: Frontend → Tauri → Provider API (keys in Rust process)
 - Better: Frontend → Tauri → Backend Server → Provider API (keys on server)
 - Benefit: Key isolation, rate limiting, caching, audit logging
@@ -628,18 +728,18 @@ console.log(providers); // Should include "openai", etc.
 
 ## Next Steps
 
-1. ✅ **Test backend** with Ollama (`npm run dev`)
-2. 🔄 **Build streaming UI** component in React
-3. 🔄 **Add cost panel** to display summary
-4. 🔄 **Add provider selector** dropdown
-5. 🔄 **Add orchestration preview** component
+1. ✅ **Test backend** with Ollama (`pnpm run dev`) — done
+2. ✅ **Build streaming UI** component in React — done
+3. ✅ **Add cost panel** to display summary — done
+4. ✅ **Add provider selector** dropdown — done
+5. ✅ **Add orchestration preview** component — done
 6. ⏸️ **Implement execute_orchestration** command (optional)
 7. ⏸️ **Production build** and test with all providers
 
 ---
 
-**Status**: Backend 100% complete. Frontend bindings ready. UI integration in progress.
+**Status**: Backend 100% complete. Frontend WIRED and integrated — migration gap closed.
 
-**Last Updated**: December 2024
+**Last Updated**: 2025-11-10
 **Tauri Version**: 2.9.2
 **Rust Version**: 1.74+

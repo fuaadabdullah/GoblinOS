@@ -80,3 +80,13 @@ export function createLiteBrain(member: GuildMemberId) {
 export function getLiteBrainDefaults(member: GuildMemberId): LiteBrainConfig {
 	return getMemberLiteBrainConfig(member);
 }
+
+// Initialize metrics server if not in test environment
+if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'test') {
+	import('./metrics.js').then(({ startMetricsServer }) => {
+		const port = parseInt(process.env.LITEBRAIN_METRICS_PORT || '9090');
+		startMetricsServer(port);
+	}).catch(err => {
+		console.warn('Failed to start metrics server:', err);
+	});
+}

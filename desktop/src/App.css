@@ -1,3 +1,54 @@
+/* Dashboard styles */
+.dashboard-container {
+  padding: 32px;
+}
+
+.dashboard-charts-placeholder {
+  margin-top: 24px;
+}
+
+.dashboard-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.chart-container {
+	background: #0b1220; /* dark background for charts */
+	border-radius: 8px;
+	padding: 16px;
+	box-shadow: 0 2px 10px rgba(2,6,23,0.6);
+	border: 1px solid rgba(255,255,255,0.03);
+}
+
+.chart-container h3 {
+	margin-bottom: 12px;
+	font-size: 16px;
+	font-weight: 600;
+	color: #e6eef8;
+}
+
+/* CSS Variables for Theming and Consistency */
+:root {
+	--font-family-sans: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+	--font-family-mono: "Courier New", monospace;
+	--color-text: #e8eaed;
+	--color-text-subtle: #888;
+	--color-background: #1a1a1a;
+	--color-background-component: #2a2a2a;
+	--color-border: #333;
+	--color-primary: #667eea;
+	--color-primary-dark: #764ba2;
+	--gradient-primary: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+
+	--border-radius: 8px;
+	--padding-sm: 0.75rem;
+	--padding-md: 1.5rem;
+	--padding-lg: 2rem;
+}
+
+
 :root {
 	font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
 	line-height: 1.5;
@@ -13,23 +64,42 @@
 
 .container {
 	margin: 0;
-	padding: 2rem;
+	padding: var(--padding-lg);
 	max-width: 1200px;
 	margin: 0 auto;
 }
 
+/* App component styles */
+.app-container {
+	padding: 16px;
+	font-family: ui-sans-serif, system-ui;
+}
+
+.app-header {
+	margin-bottom: 16px;
+}
+
+.app-title {
+	font-weight: 700;
+}
+
+.app-nav {
+	display: flex;
+	gap: 12px;
+}
+
 h1 {
 	font-size: 2.5rem;
-	margin-bottom: 0.5rem;
-	background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+	margin-bottom: 0.5rem; /* 8px */
+	background: var(--gradient-primary);
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 	background-clip: text;
 }
 
 .subtitle {
-	color: #888;
-	margin-bottom: 2rem;
+	color: var(--color-text-subtle);
+	margin-bottom: var(--padding-lg);
 }
 
 .goblin-selector {
@@ -44,27 +114,27 @@ h1 {
 
 .goblin-selector select {
 	width: 100%;
-	padding: 0.75rem;
-	border-radius: 8px;
-	border: 1px solid #333;
-	background-color: #2a2a2a;
-	color: #e8eaed;
+	padding: var(--padding-sm);
+	border-radius: var(--border-radius);
+	border: 1px solid var(--color-border);
+	background-color: var(--color-background-component);
+	color: var(--color-text);
 	font-size: 1rem;
 }
 
 .task-form {
 	display: flex;
 	gap: 0.5rem;
-	margin-bottom: 2rem;
+	margin-bottom: var(--padding-lg);
 }
 
 .task-form input {
 	flex: 1;
-	padding: 0.75rem;
-	border-radius: 8px;
-	border: 1px solid #333;
-	background-color: #2a2a2a;
-	color: #e8eaed;
+	padding: var(--padding-sm);
+	border-radius: var(--border-radius);
+	border: 1px solid var(--color-border);
+	background-color: var(--color-background-component);
+	color: var(--color-text);
 	font-size: 1rem;
 }
 
@@ -72,8 +142,8 @@ h1 {
 	padding: 0.75rem 1.5rem;
 	border-radius: 8px;
 	border: none;
-	background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-	color: white;
+	background: var(--gradient-primary);
+	color: var(--color-text);
 	font-weight: 500;
 	cursor: pointer;
 	transition: opacity 0.2s;
@@ -89,29 +159,29 @@ h1 {
 }
 
 .response-box {
-	margin-bottom: 2rem;
-	padding: 1.5rem;
-	background-color: #2a2a2a;
-	border-radius: 8px;
-	border: 1px solid #333;
+	margin-bottom: var(--padding-lg);
+	padding: var(--padding-md);
+	background-color: var(--color-background-component);
+	border-radius: var(--border-radius);
+	border: 1px solid var(--color-border);
 }
 
 .response-box h3 {
 	margin-top: 0;
 	margin-bottom: 1rem;
-	color: #667eea;
+	color: var(--color-primary);
 }
 
 .response-box pre {
 	white-space: pre-wrap;
 	word-wrap: break-word;
-	color: #e8eaed;
+	color: var(--color-text);
 	margin: 0;
-	font-family: "Courier New", monospace;
+	font-family: var(--font-family-mono);
 }
 
 .goblin-list {
-	margin-top: 2rem;
+	margin-top: var(--padding-lg);
 }
 
 .goblin-list h3 {
@@ -120,9 +190,9 @@ h1 {
 
 .goblin-card {
 	padding: 1rem;
-	background-color: #2a2a2a;
-	border-radius: 8px;
-	border: 1px solid #333;
+	background-color: var(--color-background-component);
+	border-radius: var(--border-radius);
+	border: 1px solid var(--color-border);
 	margin-bottom: 0.75rem;
 	display: flex;
 	justify-content: space-between;
@@ -131,18 +201,18 @@ h1 {
 }
 
 .goblin-card:hover {
-	border-color: #667eea;
+	border-color: var(--color-primary);
 }
 
 .goblin-card strong {
-	color: #e8eaed;
+	color: var(--color-text);
 	font-size: 1.1rem;
 }
 
 .goblin-meta {
 	flex: 1;
 	margin-left: 1rem;
-	color: #888;
+	color: var(--color-text-subtle);
 	font-size: 0.9rem;
 }
 
@@ -152,7 +222,7 @@ h1 {
 
 .goblin-meta .guild {
 	margin-left: 0.5rem;
-	color: #667eea;
+	color: var(--color-primary);
 }
 
 .status {
@@ -163,13 +233,13 @@ h1 {
 }
 
 .status.idle {
-	background-color: #333;
-	color: #888;
+	background-color: var(--color-border);
+	color: var(--color-text-subtle);
 }
 
 .status.active {
 	background-color: rgba(102, 126, 234, 0.13);
-	color: #667eea;
+	color: var(--color-primary);
 }
 
 .status.error {
@@ -208,20 +278,20 @@ h1 {
 
 .orchestration-form input {
 	flex: 1;
-	padding: 0.75rem;
-	border-radius: 8px;
-	border: 1px solid #333;
-	background-color: #2a2a2a;
-	color: #e8eaed;
+	padding: var(--padding-sm);
+	border-radius: var(--border-radius);
+	border: 1px solid var(--color-border);
+	background-color: var(--color-background-component);
+	color: var(--color-text);
 	font-size: 1rem;
 }
 
 .orchestration-form button {
 	padding: 0.75rem 1.5rem;
-	border-radius: 8px;
+	border-radius: var(--border-radius);
 	border: none;
-	background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-	color: white;
+	background: var(--gradient-primary);
+	color: var(--color-text);
 	font-weight: 500;
 	cursor: pointer;
 	transition: opacity 0.2s;

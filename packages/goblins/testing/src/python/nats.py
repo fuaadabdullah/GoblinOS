@@ -1,6 +1,6 @@
 """NATS JetStream Testcontainer for Python integration tests."""
 
-from typing import Optional, Dict, Any
+from typing import Optional
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.waiting_utils import wait_for_logs
 import nats

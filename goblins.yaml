@@ -61,21 +61,11 @@ guilds:
     verbosity: terse
     charter: "Core logic, build graph, performance budgets, break-glass fixes."
     toolbelt:
-      - id: portfolio-dev
-        name: Portfolio Dev Server
-        summary: "Run the portfolio locally with NEXT_PUBLIC_SITE_URL managed by the guild."
-        owner: vanta-lumin
-        command: NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}" PORTFOLIO_DIR="${PORTFOLIO_DIR:-/Users/fuaadabdullah/Downloads/fuaad-portfolio-starter}" bash tools/portfolio_env.sh dev
-      - id: portfolio-build
-        name: Portfolio Build
-        summary: "Build the portfolio with NEXT_PUBLIC_SITE_URL managed by the guild."
-        owner: vanta-lumin
-        command: NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}" PORTFOLIO_DIR="${PORTFOLIO_DIR:-/Users/fuaadabdullah/Downloads/fuaad-portfolio-starter}" bash tools/portfolio_env.sh build
       - id: forge-lite-build
         name: Forge Lite Build
         summary: "Build production bundle for all platforms."
         owner: dregg-embercode
-        command: cd apps/forge-lite && pnpm build
+        command: cd ../apps/forge-lite && pnpm build
       - id: forge-lite-release-build
         name: Forge Lite Release Build
         summary: "Build production bundles for iOS, Android, and Web using EAS."
@@ -136,11 +126,36 @@ guilds:
     verbosity: normal
     charter: "UI systems, theme tokens, a11y, CLS/LCP budgets; APIs, schemas, queues, idempotency, error budgets."
     toolbelt:
+      - id: portfolio-dev
+        name: Portfolio Dev Server
+        summary: "Run the portfolio locally with NEXT_PUBLIC_SITE_URL managed by the guild."
+        owner: vanta-lumin
+        command: NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}" PORTFOLIO_DIR="${PORTFOLIO_DIR:-/Users/fuaadabdullah/Downloads/fuaad-portfolio-starter}" bash tools/portfolio_env.sh dev
+      - id: portfolio-build
+        name: Portfolio Build
+        summary: "Build the portfolio with NEXT_PUBLIC_SITE_URL managed by the guild."
+        owner: vanta-lumin
+        command: NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}" PORTFOLIO_DIR="${PORTFOLIO_DIR:-/Users/fuaadabdullah/Downloads/fuaad-portfolio-starter}" bash tools/portfolio_env.sh build
       - id: forge-lite-bootstrap
         name: Forge Lite Repo Bootstrap
         summary: "Bootstrap a new Forge Lite repo - install deps, setup environment, create .env.local"
         owner: vanta-lumin
         command: bash tools/forge_lite_env.sh setup
+      - id: repo-bootstrap
+        name: Repository Bootstrap Goblin
+        summary: "Bootstrap repository with pnpm, Node.js version check, and git hooks setup"
+        owner: vanta-lumin
+        command: echo "Repo-bootstrap goblin executed via GoblinLoader"
+      - id: workspace-health
+        name: Workspace Health Goblin
+        summary: "Run comprehensive health checks on the workspace including linting, testing, and smoke tests"
+        owner: vanta-lumin
+        command: echo "Workspace-health goblin executed via GoblinLoader"
+      - id: forge-smithy
+        name: Forge Smithy Goblin
+        summary: "Environment management, bootstrapping, and development tooling for Python projects"
+        owner: vanta-lumin
+        command: echo "Forge-smithy goblin executed via GoblinLoader"
       - id: forge-lite-dev
         name: Forge Lite Dev Server
         summary: "Run Expo dev server for ForgeTM Lite mobile app."
@@ -177,26 +192,16 @@ guilds:
         summary: "Verify Sentry and PostHog integration for crash reporting and analytics."
         owner: vanta-lumin
         command: cd apps/forge-lite && pnpm telemetry:check
-      - id: forge-lite-release-build
-        name: Forge Lite Release Build
-        summary: "Build production bundles for iOS, Android, and Web using EAS."
-        owner: dregg-embercode
-        command: cd apps/forge-lite && eas build --platform all --profile production
-      - id: forge-lite-release-submit
-        name: Forge Lite Release Submit
-        summary: "Submit builds to TestFlight and Play Console for testing."
-        owner: dregg-embercode
-        command: cd apps/forge-lite && eas submit --platform ios && eas submit --platform android
       - id: forge-lite-export-data
-        name: Forge Lite Data Export
+        name: Forge Lite Export Data
         summary: "Export user trades and journal data as CSV for compliance and portability."
         owner: volt-furnace
-        command: cd apps/forge-lite/api && python -c "from services.export import export_user_data; export_user_data()"
-      - id: forge-lite-docs-update
-        name: Forge Lite Docs Update
-        summary: "Auto-generate and update README and API documentation."
-        owner: launcey-gauge
-        command: cd apps/forge-lite && pnpm docs:generate && cd api && python -c "from main import app; print(app.openapi())" > openapi.json
+        command: cd apps/forge-lite && pnpm export:data
+      - id: overmind
+        name: Overmind Goblin
+        summary: "LLM routing and memory management goblin for AI-powered trading assistance."
+        owner: volt-furnace
+        command: echo "Overmind goblin executed via GoblinLoader"
     members:
       - id: vanta-lumin
         title: Glyph Scribe
@@ -221,7 +226,7 @@ guilds:
           - "CLS/LCP performance budgets and design QA"
         kpis: [cls, lcp, a11y_score]
         tools:
-          owned: [portfolio-dev, portfolio-build, forge-lite-bootstrap, forge-lite-dev, forge-lite-telemetry-check, forge-lite-docs-update]
+          owned: [portfolio-dev, portfolio-build, forge-lite-bootstrap, repo-bootstrap, workspace-health, forge-smithy, forge-lite-dev, forge-lite-telemetry-check]
           selection_rules:
             - trigger: "bootstrap forge lite repo"
               tool: forge-lite-bootstrap
@@ -229,6 +234,18 @@ guilds:
               tool: forge-lite-bootstrap
             - trigger: "initialize forge lite project"
               tool: forge-lite-bootstrap
+            - trigger: "bootstrap repository"
+              tool: repo-bootstrap
+            - trigger: "setup development environment"
+              tool: repo-bootstrap
+            - trigger: "check workspace health"
+              tool: workspace-health
+            - trigger: "run health checks"
+              tool: workspace-health
+            - trigger: "setup python environment"
+              tool: forge-smithy
+            - trigger: "python development tooling"
+              tool: forge-smithy
             - trigger: "start portfolio dev server"
               tool: portfolio-dev
             - trigger: "build portfolio"
@@ -240,7 +257,7 @@ guilds:
             - trigger: "check telemetry integration"
               tool: forge-lite-telemetry-check
             - trigger: "update documentation"
-              tool: forge-lite-docs-update
+              tool: mages-guild-docs-update
       - id: volt-furnace
         title: Socketwright
         brain:
@@ -265,7 +282,7 @@ guilds:
           - "Idempotency and error budget enforcement"
         kpis: [p99_latency, error_rate, schema_drift]
         tools:
-          owned: [forge-lite-api-dev, forge-lite-db-migrate, forge-lite-rls-check, forge-lite-auth-login, forge-lite-market-data-fetch, forge-lite-export-data]
+          owned: [forge-lite-api-dev, forge-lite-db-migrate, forge-lite-rls-check, forge-lite-auth-login, forge-lite-market-data-fetch, forge-lite-export-data, overmind]
           selection_rules:
             - trigger: "start API server"
               tool: forge-lite-api-dev
@@ -283,31 +300,40 @@ guilds:
               tool: forge-lite-market-data-fetch
             - trigger: "export user data"
               tool: forge-lite-export-data
+            - trigger: "AI trading assistance"
+              tool: overmind
+            - trigger: "LLM routing"
+              tool: overmind
 
   - name: Huntress
     verbosity: normal
     charter: "Flaky test hunts, regression triage, incident tagging; early-signal scouting, log mining, trend surfacing."
     toolbelt:
       - id: forge-lite-test
-        name: Forge Lite Tests
-        summary: "Run all tests for ForgeTM Lite (frontend + backend)."
+        name: Forge Lite - Run Tests
+        summary: "Run unit and integration tests for ForgeTM Lite (JS + API)"
         owner: magnolia-nightbloom
-        command: cd apps/forge-lite && pnpm test && cd api && pytest
-      - id: forge-lite-e2e-test
-        name: Forge Lite E2E Tests
-        summary: "Run end-to-end tests for critical user flows (risk calc, trade journal)."
+        command: cd apps/forge-lite && pnpm test
+      - id: huntress-guild-analyze-tests
+        name: Huntress Guild - Analyze Tests
+        summary: "Analyze test results for flaky tests and patterns using Huntress Guild goblin."
         owner: magnolia-nightbloom
-        command: cd apps/forge-lite && pnpm test:e2e
-      - id: forge-lite-smoke-test
-        name: Forge Lite Smoke Tests
-        summary: "Run smoke tests on all platforms (iOS, Android, Web) for basic functionality."
+        command: cd GoblinOS/packages/goblins/huntress-guild && python test.py analyze_tests --project apps/forge-lite
+      - id: huntress-guild-triage-regression
+        name: Huntress Guild - Triage Regression
+        summary: "Triage test regressions and identify root causes using Huntress Guild goblin."
         owner: magnolia-nightbloom
-        command: cd apps/forge-lite && pnpm test:smoke
-      - id: forge-lite-feedback-export
-        name: Forge Lite Feedback Export
-        summary: "Export user feedback, bug reports, and feature requests for analysis."
+        command: cd GoblinOS/packages/goblins/huntress-guild && python test.py triage_regression --commit HEAD
+      - id: huntress-guild-scout-signals
+        name: Huntress Guild - Scout Signals
+        summary: "Scout for early signals and emerging trends using Huntress Guild goblin."
         owner: magnolia-nightbloom
-        command: cd apps/forge-lite/api && python -c "from services.feedback import export_feedback; export_feedback()"
+        command: cd GoblinOS/packages/goblins/huntress-guild && python test.py scout_signals --days 7
+      - id: huntress-guild-report-incidents
+        name: Huntress Guild - Report Incidents
+        summary: "Generate incident reports and automated tagging using Huntress Guild goblin."
+        owner: magnolia-nightbloom
+        command: cd GoblinOS/packages/goblins/huntress-guild && python test.py report_incidents --severity medium
     members:
       - id: magnolia-nightbloom
         title: Vermin Huntress
@@ -332,26 +358,24 @@ guilds:
           - "MTTR reduction for test failures"
         kpis: [flaky_rate, mttr_test_failures]
         tools:
-          owned: [forge-lite-test, forge-lite-e2e-test, forge-lite-smoke-test, forge-lite-feedback-export]
+          owned: [huntress-guild-analyze-tests, huntress-guild-triage-regression, huntress-guild-scout-signals, huntress-guild-report-incidents]
           selection_rules:
-            - trigger: "run tests"
-              tool: forge-lite-test
+            - trigger: "analyze tests"
+              tool: huntress-guild-analyze-tests
             - trigger: "identify flaky tests"
-              tool: forge-lite-test
+              tool: huntress-guild-analyze-tests
+            - trigger: "triage regression"
+              tool: huntress-guild-triage-regression
             - trigger: "regression check"
-              tool: forge-lite-test
-            - trigger: "run e2e tests"
-              tool: forge-lite-e2e-test
-            - trigger: "test user flows"
-              tool: forge-lite-e2e-test
-            - trigger: "run smoke tests"
-              tool: forge-lite-smoke-test
-            - trigger: "test basic functionality"
-              tool: forge-lite-smoke-test
-            - trigger: "export user feedback"
-              tool: forge-lite-feedback-export
+              tool: huntress-guild-triage-regression
+            - trigger: "scout signals"
+              tool: huntress-guild-scout-signals
+            - trigger: "analyze logs"
+              tool: huntress-guild-scout-signals
+            - trigger: "report incidents"
+              tool: huntress-guild-report-incidents
             - trigger: "analyze bug reports"
-              tool: forge-lite-feedback-export
+              tool: huntress-guild-report-incidents
       - id: mags-charietto
         title: Omenfinder
         brain:
@@ -381,6 +405,37 @@ guilds:
   - name: Keepers
     verbosity: terse
     charter: "Secrets, licenses, SBOM, signatures, backups, attestations."
+    toolbelt:
+      - id: keepers-guild-secrets-audit
+        name: Keepers Guild - Secrets Audit
+        summary: "Audit API key documentation and .env hygiene using Keepers Guild goblin."
+        owner: sentenial-ledgerwarden
+        command: cd GoblinOS/packages/goblins/keepers-guild && python run_keeper.py secrets:audit
+      - id: keepers-guild-security-scan
+        name: Keepers Guild - Security Scan
+        summary: "Run security compliance checks using Keepers Guild goblin."
+        owner: sentenial-ledgerwarden
+        command: cd GoblinOS/packages/goblins/keepers-guild && python run_keeper.py security:scan
+      - id: keepers-guild-storage-cleanup
+        name: Keepers Guild - Storage Cleanup
+        summary: "Run the weekly storage cleanup routine using Keepers Guild goblin."
+        owner: sentenial-ledgerwarden
+        command: cd GoblinOS/packages/goblins/keepers-guild && python run_keeper.py storage:cleanup
+      - id: keepers-guild-system-clean
+        name: Keepers Guild - System Clean
+        summary: "Perform system-level cache purge using Keepers Guild goblin."
+        owner: sentenial-ledgerwarden
+        command: cd GoblinOS/packages/goblins/keepers-guild && python run_keeper.py system:clean
+      - id: keepers-guild-digital-purge
+        name: Keepers Guild - Digital Purge Scanner
+        summary: "Scan email for service accounts and data trails to identify digital footprint."
+        owner: sentenial-ledgerwarden
+        command: cd GoblinOS/packages/goblins/keepers-guild && python digital_purge.py
+      - id: keepers-guild-device-purge
+        name: Keepers Guild - Device Purge
+        summary: "Clean local device data including caches, cookies, and installed applications."
+        owner: sentenial-ledgerwarden
+        command: cd GoblinOS/packages/goblins/keepers-guild && python digital_purge_layer3.py
     members:
       - id: sentenial-ledgerwarden
         title: Sealkeeper
@@ -407,8 +462,32 @@ guilds:
           - "Backup integrity and recovery"
         kpis: [secrets_rotated, sbom_drift, unsigned_artifacts]
         tools:
-          owned: []
+          owned: [keepers-guild-secrets-audit, keepers-guild-security-scan, keepers-guild-storage-cleanup, keepers-guild-system-clean, keepers-guild-digital-purge, keepers-guild-device-purge]
           selection_rules:
+            - trigger: "audit secrets"
+              tool: keepers-guild-secrets-audit
+            - trigger: "check API key hygiene"
+              tool: keepers-guild-secrets-audit
+            - trigger: "run security scan"
+              tool: keepers-guild-security-scan
+            - trigger: "audit compliance"
+              tool: keepers-guild-security-scan
+            - trigger: "cleanup storage"
+              tool: keepers-guild-storage-cleanup
+            - trigger: "weekly cleanup"
+              tool: keepers-guild-storage-cleanup
+            - trigger: "system cleanup"
+              tool: keepers-guild-system-clean
+            - trigger: "clear caches"
+              tool: keepers-guild-system-clean
+            - trigger: "run digital purge"
+              tool: keepers-guild-digital-purge
+            - trigger: "audit my accounts"
+              tool: keepers-guild-digital-purge
+            - trigger: "clean my device"
+              tool: keepers-guild-device-purge
+            - trigger: "purge local data"
+              tool: keepers-guild-device-purge
             - trigger: "rotate secrets"
               tool: null
               note: "Uses brain + secrets_manage.sh script"
@@ -420,16 +499,31 @@ guilds:
     verbosity: verbose
     charter: "Forecasting, anomaly detection, and quality gates for releases."
     toolbelt:
-      - id: forge-lite-lint
-        name: Forge Lite Lint
-        summary: "Run linters for TypeScript and Python code."
+      - id: mages-guild-quality-lint
+        name: Mages Guild - Quality Lint
+        summary: "Run comprehensive quality gates including linting, type checking, and security scans."
         owner: launcey-gauge
-        command: cd apps/forge-lite && pnpm lint && cd api && ruff check .
-      - id: forge-lite-docs-update
-        name: Forge Lite Docs Update
-        summary: "Auto-generate and update README and API documentation."
+        command: cd packages/goblins/mages-guild && python run_mage.py quality:lint
+      - id: mages-guild-vault-validate
+        name: Mages Guild - Vault Validate
+        summary: "Validate Obsidian vault structure, YAML frontmatter, and linguist attributes."
         owner: launcey-gauge
-        command: cd apps/forge-lite && pnpm docs:generate && cd api && python -c "from main import app; print(app.openapi())" > openapi.json
+        command: cd packages/goblins/mages-guild && python run_mage.py vault:validate
+      - id: mages-guild-anomaly-detect
+        name: Mages Guild - Anomaly Detect
+        summary: "Detect anomalies in metrics, logs, and system performance."
+        owner: grim-rune
+        command: cd packages/goblins/mages-guild && python run_mage.py anomaly:detect
+      - id: mages-guild-forecast-risk
+        name: Mages Guild - Forecast Risk
+        summary: "Forecast release risk and assess deployment safety."
+        owner: hex-oracle
+        command: cd packages/goblins/mages-guild && python run_mage.py forecast:risk
+      - id: mages-guild-docs-update
+        name: Mages Guild - Docs Update
+        summary: "Auto-generate and update documentation with quality metrics."
+        owner: launcey-gauge
+        command: cd packages/goblins/mages-guild && python run_mage.py docs:update
     members:
       - id: hex-oracle
         title: Forecasting Fiend
@@ -454,9 +548,15 @@ guilds:
           - "Forecast accuracy optimization (MAE/MAPE)"
         kpis: [forecast_mae, forecast_mape, release_risk_auc]
         tools:
-          owned: []
+          owned: [mages-guild-forecast-risk]
           selection_rules:
             - trigger: "forecast release risk"
+              tool: mages-guild-forecast-risk
+            - trigger: "assess deployment safety"
+              tool: mages-guild-forecast-risk
+            - trigger: "predict incident likelihood"
+              tool: mages-guild-forecast-risk
+            - trigger: "capacity planning"
               tool: null
               note: "Uses brain for predictive modeling"
       - id: grim-rune
@@ -483,9 +583,15 @@ guilds:
           - "Alert precision and recall optimization"
         kpis: [anomalies_preprod, alert_precision, alert_recall]
         tools:
-          owned: []
+          owned: [mages-guild-anomaly-detect]
           selection_rules:
             - trigger: "detect anomalies"
+              tool: mages-guild-anomaly-detect
+            - trigger: "analyze metrics"
+              tool: mages-guild-anomaly-detect
+            - trigger: "check system performance"
+              tool: mages-guild-anomaly-detect
+            - trigger: "auto-ticket creation"
               tool: null
               note: "Uses brain for anomaly detection"
       - id: launcey-gauge
@@ -509,15 +615,15 @@ guilds:
           - "PR gate pass rate optimization"
         kpis: [pr_gate_pass_rate, violations_per_kloc]
         tools:
-          owned: [forge-lite-lint, forge-lite-docs-update]
+          owned: [mages-guild-quality-lint, mages-guild-docs-update]
           selection_rules:
             - trigger: "run linters"
-              tool: forge-lite-lint
+              tool: mages-guild-quality-lint
             - trigger: "check code quality"
-              tool: forge-lite-lint
+              tool: mages-guild-quality-lint
             - trigger: "validate PR"
-              tool: forge-lite-lint
+              tool: mages-guild-quality-lint
             - trigger: "update documentation"
-              tool: forge-lite-docs-update
+              tool: mages-guild-docs-update
             - trigger: "generate API docs"
-              tool: forge-lite-docs-update
+              tool: mages-guild-docs-update

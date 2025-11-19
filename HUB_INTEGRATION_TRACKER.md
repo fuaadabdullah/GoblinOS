@@ -1,3 +1,7 @@
+---
+description: "HUB_INTEGRATION_TRACKER"
+---
+
 # GoblinOS Hub Integration - Implementation Tracker
 
 **Start Date**: November 7, 2025

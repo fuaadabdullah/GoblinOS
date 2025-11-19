@@ -1,1 +1,1 @@
-export * from './consolidation';
+export * from "./consolidation";

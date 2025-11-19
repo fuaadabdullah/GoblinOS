@@ -1,0 +1,12 @@
+{
+  "environment": "development",
+  "python_version": "3.10",
+  "enable_pre_commit": true,
+  "enable_devcontainer": true,
+  "enable_biome": true,
+  "enable_ruff": true,
+  "enable_mypy": true,
+  "enable_pytest": true,
+  "custom_dependencies": [],
+  "custom_scripts": {}
+}

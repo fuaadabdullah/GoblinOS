@@ -82,12 +82,12 @@ console.log(
 	selector.getToolOwners("forge-lite-build"),
 );
 console.log(
-	`forge-lite-test owners:`,
-	selector.getToolOwners("forge-lite-test"),
+	`huntress-guild-analyze-tests owners:`,
+	selector.getToolOwners("huntress-guild-analyze-tests"),
 );
 console.log(
-	`forge-lite-lint owners:`,
-	selector.getToolOwners("forge-lite-lint"),
+	`mages-guild-quality-lint owners:`,
+	selector.getToolOwners("mages-guild-quality-lint"),
 );
 console.log(
 	`\nDregg Embercode can invoke forge-lite-build:`,
@@ -98,6 +98,6 @@ console.log(
 	selector.canInvokeTool("vanta-lumin", "forge-lite-dev"),
 );
 console.log(
-	`Volt Furnace can invoke forge-lite-build:`,
-	selector.canInvokeTool("volt-furnace", "forge-lite-build"),
+	`Volt Furnace can invoke forge-lite-api-dev:`,
+	selector.canInvokeTool("volt-furnace", "forge-lite-api-dev"),
 );

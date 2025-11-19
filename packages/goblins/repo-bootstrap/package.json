@@ -2,11 +2,15 @@
 	"name": "goblin-repo-bootstrap",
 	"version": "0.1.0",
 	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
 	"scripts": {
 		"build": "tsc -p tsconfig.json",
 		"check": "eslint . && tsc -p tsconfig.json --noEmit",
 		"test": "vitest",
 		"lint": "eslint ."
 	},
-	"dependencies": {}
+	"dependencies": {
+		"@goblinos/shared": "workspace:*"
+	}
 }

@@ -1,4 +1,42 @@
-# GoblinOS Telemetry & Audit System
+# Telemetry PoC - Integration Test
+
+This folder contains a small PoC telemetry pipeline used for local integration testing. The integration test starts three local services (audit sink, LiteBrain, and Overmind) and verifies that Overmind emits a signed audit envelope which the audit sink stores.
+
+## How to run
+
+1. From the repository root run:
+
+   ```bash
+   cd GoblinOS/tools/telemetry
+   ./integration_test.sh
+   ```
+
+2. The script will:
+
+   - start a minimal audit service on port 19001
+   - start LiteBrain (FastAPI) on port 18001
+   - start Overmind (Node PoC) on port 17000
+   - trigger a `/question` request to Overmind and assert the response contains a non-empty `audit_event.signature`
+   - verify the last audit event with the Python verifier
+
+## Required environment
+
+The script exports defaults, but you can override:
+
+- `SECRET_KEY_BASE64` - Ed25519 secret key (base64) used by Overmind to sign the audit envelope. The script exports a test key by default.
+- `PUBKEY_BASE64` - Public key (base64) used by the audit verifier.
+- `AUDIT_URL` - URL of the audit sink (default: `http://localhost:19001/audit`).
+- `LITEBRAIN_URL` - URL of LiteBrain (default: `http://localhost:18001/process`).
+
+## Notes
+
+- The integration script is intentionally lightweight and for local PoC only. It spawns background processes and cleans them up on completion.
+- If you hit races where Overmind cannot reach LiteBrain, increase the sleep in the script near the "Waiting for services to start" line.
+- The repository may not allow the script to start services in constrained CI; run locally for reliable results.
+
+If you'd like, I can prepare a PR that includes the updated test and this README — I can create a branch and commit locally, but pushing/creating a PR requires a working git remote from this environment.
+
+## GoblinOS Telemetry & Audit System
 
 A world-class unified telemetry and audit logging system for GoblinOS, featuring end-to-end tracing, non-repudiable audit logs, and comprehensive management tools.
 

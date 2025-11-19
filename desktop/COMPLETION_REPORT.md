@@ -1,3 +1,7 @@
+---
+description: "COMPLETION_REPORT"
+---
+
 # Multi-Provider Integration - Completion Report
 
 **Date**: December 2024

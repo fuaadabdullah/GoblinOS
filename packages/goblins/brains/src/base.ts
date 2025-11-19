@@ -1,5 +1,10 @@
 import { type ProviderClient, createProvider } from "@goblinos/providers";
 import { z } from "zod";
+import {
+	recordRequestStart,
+	recordRequestEnd,
+	updateResourceUsage
+} from "./metrics.js";
 
 export const LiteBrainConfigSchema = z.object({
 	memberId: z.string(),
@@ -127,6 +132,10 @@ export class BaseLiteBrain {
 		const validated = LiteBrainRequestSchema.parse(request);
 
 		const prompt = this.buildPrompt(validated);
+
+		// Record request start
+		recordRequestStart(this.config.defaultModel, this.config.memberId);
+
 		try {
 			const { sanitized: sanitizedExamples, warnings } = sanitizeExamples(
 				this.config.examples,
@@ -168,12 +177,31 @@ export class BaseLiteBrain {
 			});
 
 			const plan = this.parsePlan(response.content);
+
+			// Calculate complexity for metrics
+			const complexity = estimateComplexity(
+				validated.task,
+				prompt,
+				this.config.routingPolicy
+			);
+
+			const processingTime = Date.now() - start;
+
+			// Record successful request end
+			recordRequestEnd(model, this.config.memberId, complexity, 'success', processingTime / 1000);
+
+			// Update resource usage metrics
+			if (response.usage?.totalTokens) {
+				updateResourceUsage('tokens_used', model, response.usage.totalTokens);
+			}
+			updateResourceUsage('processing_time', model, processingTime);
+
 			return LiteBrainResponseSchema.parse({
 				success: true,
 				plan,
 				metadata: {
 					model: response.model,
-					processingTime: Date.now() - start,
+					processingTime,
 					tokensUsed: response.usage?.totalTokens,
 					embeddingModel: this.config.embeddingModel,
 					analyticsTag: this.config.analyticsTag,
@@ -181,6 +209,11 @@ export class BaseLiteBrain {
 				},
 			});
 		} catch (err) {
+			const processingTime = Date.now() - start;
+
+			// Record failed request end
+			recordRequestEnd(this.config.defaultModel, this.config.memberId, 'medium', 'error', processingTime / 1000);
+
 			throw new LiteBrainError(
 				`LiteBrain processing failed: ${err instanceof Error ? err.message : String(err)}`,
 				"PROCESSING_ERROR",

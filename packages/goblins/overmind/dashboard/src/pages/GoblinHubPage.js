@@ -1,3 +1,14 @@
+export { default } from "./GoblinHubPage";
+export * from "./GoblinHubPage";
+
+// Thin wrapper re-export for GoblinHubPage (keeps backward compatibility with .js imports)
+export { default } from "./GoblinHubPage";
+export * from "./GoblinHubPage";
+
+// Thin wrapper re-export for GoblinHubPage
+export { default } from "./GoblinHubPage";
+export * from "./GoblinHubPage";
+
 /**
  * GoblinHub - Main interactive dashboard
  *
@@ -7,192 +18,121 @@
  * - Right: StatsPanel + HistoryPanel
  */
 import { useEffect, useState } from "react";
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { getDefaultClient } from "../api/runtime-client";
 import { CostPanel } from "../components/CostPanel";
 import { GoblinGrid } from "../components/GoblinGrid";
 import { HistoryPanel } from "../components/HistoryPanel";
+import { RuntimeStatusPanel } from "../components/RuntimeStatusPanel";
 import { StatsPanel } from "../components/StatsPanel";
 import { TaskExecutor } from "../components/TaskExecutor";
 import "../styles/dark-theme.css";
-export function GoblinHubPage() {
-	const [client] = useState(() => getDefaultClient("http://localhost:3001"));
-	const [goblins, setGoblins] = useState([]);
-	const [selectedGoblinId, setSelectedGoblinId] = useState(null);
-	const [selectedGoblin, setSelectedGoblin] = useState(null);
-	const [busyGoblins, setBusyGoblins] = useState(new Set());
-	const [refreshTrigger, setRefreshTrigger] = useState(0);
-	const [serverStatus, setServerStatus] = useState("connecting");
-	// Initialize: check server health and fetch goblins
-	useEffect(() => {
-		const init = async () => {
-			try {
-				// Check server health
-				await client.getHealth();
-				setServerStatus("connected");
-				// Fetch goblins list
-				const goblinsList = await client.getGoblins();
-				setGoblins(goblinsList);
-				// Auto-select first goblin
-				if (goblinsList.length > 0 && !selectedGoblinId) {
-					setSelectedGoblinId(goblinsList[0].id);
-				}
-			} catch (error) {
-				console.error("Failed to initialize:", error);
-				setServerStatus("error");
-			}
-		};
-		init();
-	}, [client, selectedGoblinId]);
-	// Update selected goblin object when ID changes
-	useEffect(() => {
-		if (selectedGoblinId) {
-			const goblin = goblins.find((g) => g.id === selectedGoblinId);
-			setSelectedGoblin(goblin || null);
-		} else {
-			setSelectedGoblin(null);
-		}
-	}, [selectedGoblinId, goblins]);
-	// Handle goblin selection
-	const handleSelectGoblin = (goblinId) => {
-		setSelectedGoblinId(goblinId);
-	};
-	// Handle task completion - refresh stats and history
-	const handleTaskComplete = () => {
-		setRefreshTrigger((prev) => prev + 1);
-	};
-	// Server error state
-	if (serverStatus === "error") {
-		return _jsx("div", {
-			className: "goblin-hub",
-			children: _jsx("div", {
-				className: "server-error",
-				children: _jsxs("div", {
-					className: "error-content",
-					children: [
-						_jsx("div", { className: "error-icon", children: "\uD83D\uDD0C" }),
-						_jsx("h2", { children: "Server Connection Failed" }),
-						_jsx("p", {
-							children: "Could not connect to GoblinOS Runtime Server",
-						}),
-						_jsx("code", {
-							className: "error-url",
-							children: "http://localhost:3001",
-						}),
-						_jsxs("div", {
-							className: "error-actions",
-							children: [
-								_jsx("p", {
-									className: "text-muted",
-									children: "Make sure the server is running:",
-								}),
-								_jsx("code", {
-									className: "error-command",
-									children: "pnpm --filter @goblinos/goblin-runtime server",
-								}),
-							],
-						}),
-						_jsx("button", {
-							className: "button button-primary",
-							onClick: () => window.location.reload(),
-							children: "Retry Connection",
-						}),
-					],
-				}),
-			}),
-		});
-	}
-	// Loading state
-	if (serverStatus === "connecting") {
-		return _jsx("div", {
-			className: "goblin-hub",
-			children: _jsxs("div", {
-				className: "server-loading",
-				children: [
-					_jsx("div", { className: "spinner-large" }),
-					_jsx("h2", { children: "Connecting to GoblinOS..." }),
-					_jsx("p", {
-						className: "text-muted",
-						children: "http://localhost:3001",
-					}),
-				],
-			}),
-		});
-	}
-	return _jsxs("div", {
-		className: "goblin-hub",
-		children: [
-			_jsx("header", {
-				className: "hub-header",
-				children: _jsxs("div", {
-					className: "header-content",
-					children: [
-						_jsxs("h1", {
-							className: "hub-title",
-							children: [
-								_jsx("span", {
-									className: "title-icon",
-									children: "\uD83E\uDD16",
-								}),
-								"GoblinOS Hub",
-							],
-						}),
-						_jsxs("div", {
-							className: "header-status",
-							children: [
-								_jsx("span", { className: "status-dot status-connected" }),
-								_jsx("span", {
-									className: "text-muted",
-									children: "Connected",
-								}),
-							],
-						}),
-					],
-				}),
-			}),
-			_jsxs("div", {
-				className: "hub-layout",
-				children: [
-					_jsx("aside", {
-						className: "hub-sidebar-left",
-						children: _jsx(GoblinGrid, {
-							goblins: goblins,
-							selectedGoblinId: selectedGoblinId,
-							onSelectGoblin: handleSelectGoblin,
-							busyGoblins: busyGoblins,
-						}),
-					}),
-					_jsx("main", {
-						className: "hub-main",
-						children: _jsx(TaskExecutor, {
-							client: client,
-							selectedGoblin: selectedGoblin,
-							onTaskComplete: handleTaskComplete,
-						}),
-					}),
-					_jsxs("aside", {
-						className: "hub-sidebar-right",
-						children: [
-							_jsx(StatsPanel, {
-								client: client,
-								goblinId: selectedGoblinId,
-								refreshTrigger: refreshTrigger,
-							}),
-							_jsx(HistoryPanel, {
-								client: client,
-								goblinId: selectedGoblinId,
-								refreshTrigger: refreshTrigger,
-							}),
-							_jsx(CostPanel, {
-								client: client,
-								refreshTrigger: refreshTrigger,
-							}),
-						],
-					}),
-				],
-			}),
-		],
-	});
+export function GoblinHubPage({ client }) {
+    const [goblins, setGoblins] = useState([]);
+    const [selectedGoblinId, setSelectedGoblinId] = useState(null);
+    const [selectedGoblin, setSelectedGoblin] = useState(null);
+    const [busyGoblins] = useState(new Set());
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [serverStatus, setServerStatus] = useState("connecting");
+    // Initialize: check server health and fetch goblins
+    useEffect(() => {
+        const init = async () => {
+            try {
+                // Check server health - skip for desktop app
+                // await client.getHealth();
+                setServerStatus("connected");
+                // Fetch goblins list
+                const goblinsList = await client.getGoblins();
+                setGoblins(goblinsList); // Auto-select first goblin
+                if (goblinsList.length > 0 && !selectedGoblinId) {
+                    setSelectedGoblinId(goblinsList[0].id);
+                }
+            }
+            catch (error) {
+                console.error("Failed to initialize:", error);
+                setServerStatus("error");
+            }
+        };
+        init();
+    }, [client, selectedGoblinId]);
+    // Update selected goblin object when ID changes
+    useEffect(() => {
+        if (selectedGoblinId) {
+            const goblin = goblins.find((g) => g.id === selectedGoblinId);
+            setSelectedGoblin(goblin || null);
+        }
+        else {
+            setSelectedGoblin(null);
+        }
+    }, [selectedGoblinId, goblins]);
+    // Handle goblin selection
+    const handleSelectGoblin = (goblinId) => {
+        setSelectedGoblinId(goblinId);
+    };
+    // Handle task completion - refresh stats and history
+    const handleTaskComplete = () => {
+        setRefreshTrigger((prev) => prev + 1);
+    };
+    // Server error state
+    if (serverStatus === "error") {
+        return (_jsx("div", { className: "goblin-hub", children: _jsx("div", { className: "server-error", children: _jsxs("div", { className: "error-content", children: [_jsx("div", { className: "error-icon", children: "\uD83D\uDD0C" }), _jsx("h2", { children: "Server Connection Failed" }), _jsx("p", { children: "Could not connect to GoblinOS Runtime Server" }), _jsx("code", { className: "error-url", children: "http://localhost:3001" }), _jsxs("div", { className: "error-actions", children: [_jsx("p", { className: "text-muted", children: "Make sure the server is running:" }), _jsx("code", { className: "error-command", children: "pnpm --filter @goblinos/goblin-runtime server" })] }), _jsx("button", { className: "button button-primary", onClick: () => window.location.reload(), children: "Retry Connection" })] }) }) }));
+    }
+    // Loading state
+    if (serverStatus === "connecting") {
+        return (_jsx("div", { className: "goblin-hub", children: _jsxs("div", { className: "server-loading", children: [_jsx("div", { className: "spinner-large" }), _jsx("h2", { children: "Connecting to GoblinOS..." }), _jsx("p", { className: "text-muted", children: "http://localhost:3001" })] }) }));
+    }
+    return (_jsxs("div", { className: "goblin-hub", children: [_jsx("header", { className: "hub-header", children: _jsxs("div", { className: "header-content", children: [_jsxs("h1", { className: "hub-title", children: [_jsx("span", { className: "title-icon", children: "\uD83E\uDD16" }), "GoblinOS Hub"] }), _jsxs("div", { className: "header-status", children: [_jsx("span", { className: "status-dot status-connected" }), _jsx("span", { className: "text-muted", children: "Connected" })] })] }) }), _jsxs("div", { className: "hub-layout", children: [_jsx("aside", { className: "hub-sidebar-left", children: _jsx(GoblinGrid, { goblins: goblins, selectedGoblinId: selectedGoblinId, onSelectGoblin: handleSelectGoblin, busyGoblins: busyGoblins }) }), _jsx("main", { className: "hub-main", children: _jsx(TaskExecutor, { client: client, selectedGoblin: selectedGoblin, onTaskComplete: handleTaskComplete, goblins: goblins }) }), _jsxs("aside", { className: "hub-sidebar-right", children: [_jsx(StatsPanel, { client: client, goblinId: selectedGoblinId, refreshTrigger: refreshTrigger }), _jsx(HistoryPanel, { client: client, goblinId: selectedGoblinId, refreshTrigger: refreshTrigger }), _jsx(CostPanel, { client: client, refreshTrigger: refreshTrigger }), _jsx(RuntimeStatusPanel, { client: client }), _jsx(APIKeyTestPanel, { client: client })] })] })] }));
+}
+/* ============================================================================
+ * API Key Test Panel Component
+ * ========================================================================== */
+function APIKeyTestPanel({ client }) {
+    const [providers, setProviders] = useState([]);
+    const [selectedProvider, setSelectedProvider] = useState("");
+    const [apiKey, setApiKey] = useState("");
+    const [testResults, setTestResults] = useState([]);
+    useEffect(() => {
+        // Load available providers
+        client.getProviders().then(setProviders).catch(console.error);
+    }, [client]);
+    const addTestResult = (message) => {
+        setTestResults((prev) => [
+            ...prev.slice(-4),
+            `${new Date().toLocaleTimeString()}: ${message}`,
+        ]);
+    };
+    const testStoreApiKey = async () => {
+        if (!selectedProvider || !apiKey)
+            return;
+        try {
+            await client.storeApiKey(selectedProvider, apiKey);
+            addTestResult(`✅ Stored API key for ${selectedProvider}`);
+        }
+        catch (error) {
+            addTestResult(`❌ Failed to store API key: ${error}`);
+        }
+    };
+    const testGetApiKey = async () => {
+        if (!selectedProvider)
+            return;
+        try {
+            const key = await client.getApiKey(selectedProvider);
+            addTestResult(`✅ Retrieved API key for ${selectedProvider}: ${key ? "Present" : "Not found"}`);
+        }
+        catch (error) {
+            addTestResult(`❌ Failed to get API key: ${error}`);
+        }
+    };
+    const testClearApiKey = async () => {
+        if (!selectedProvider)
+            return;
+        try {
+            await client.clearApiKey(selectedProvider);
+            addTestResult(`✅ Cleared API key for ${selectedProvider}`);
+        }
+        catch (error) {
+            addTestResult(`❌ Failed to clear API key: ${error}`);
+        }
+    };
+    return (_jsxs("div", { className: "panel api-key-test-panel", children: [_jsx("div", { className: "panel-header", children: _jsx("h3", { children: "API Key Testing" }) }), _jsxs("div", { className: "panel-content", children: [_jsxs("div", { className: "form-group", children: [_jsx("label", { htmlFor: "provider-select", children: "Provider:" }), _jsxs("select", { id: "provider-select", value: selectedProvider, onChange: (e) => setSelectedProvider(e.target.value), children: [_jsx("option", { value: "", children: "Select provider..." }), providers.map((provider) => (_jsx("option", { value: provider, children: provider }, provider)))] })] }), _jsxs("div", { className: "form-group", children: [_jsx("label", { htmlFor: "api-key-input", children: "API Key:" }), _jsx("input", { id: "api-key-input", type: "password", value: apiKey, onChange: (e) => setApiKey(e.target.value), placeholder: "Enter test API key" })] }), _jsxs("div", { className: "button-group", children: [_jsx("button", { onClick: testStoreApiKey, disabled: !selectedProvider || !apiKey, children: "Store Key" }), _jsx("button", { onClick: testGetApiKey, disabled: !selectedProvider, children: "Get Key" }), _jsx("button", { onClick: testClearApiKey, disabled: !selectedProvider, children: "Clear Key" })] }), _jsxs("div", { className: "test-results", children: [_jsx("h4", { children: "Test Results:" }), _jsx("div", { className: "results-list", children: testResults.map((result, index) => (_jsx("div", { className: "result-item", children: result }, index))) })] })] })] }));
 }
 /* ============================================================================
  * Styles
@@ -403,7 +343,7 @@ const styles = `
 `;
 // Inject styles
 if (typeof document !== "undefined") {
-	const styleSheet = document.createElement("style");
-	styleSheet.textContent = styles;
-	document.head.appendChild(styleSheet);
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = styles;
+    document.head.appendChild(styleSheet);
 }

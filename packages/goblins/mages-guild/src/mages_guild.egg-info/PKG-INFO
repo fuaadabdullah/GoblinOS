@@ -1,0 +1,43 @@
+Metadata-Version: 2.4
+Name: mages-guild
+Version: 0.1.0
+Summary: Mages Guild - Quality gates, anomaly detection, and vault validation for GoblinOS
+Author-email: GoblinOS <goblin@forge.local>
+License: MIT
+Project-URL: Homepage, https://github.com/goblinos/forge-monorepo
+Project-URL: Repository, https://github.com/goblinos/forge-monorepo
+Project-URL: Issues, https://github.com/goblinos/forge-monorepo/issues
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Software Development :: Quality Assurance
+Classifier: Topic :: System :: Monitoring
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: goblinos-shared>=0.1.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: jsonschema>=4.0.0
+Requires-Dist: pyyaml>=6.0.0
+Requires-Dist: pathlib2>=2.3.0; python_version < "3.4"
+
+# @goblinos/mages-guild
+
+Mages Guild CLI keeps quality gates tight and validates the knowledge vault.
+
+## Usage
+
+```bash
+pnpm -C GoblinOS mages-guild --help
+```
+
+### Commands
+- `quality:lint` — run the monorepo lint and security umbrella.
+- `quality:full` — alias for `quality:lint` to align with dashboards.
+- `vault:validate` — validate the Forge knowledge vault.
+- `tools` — list Mages guild toolbelt assignments.
+- `roadmap` — view upcoming anomaly automation milestones.

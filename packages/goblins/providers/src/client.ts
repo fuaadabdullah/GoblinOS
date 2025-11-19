@@ -1,10 +1,11 @@
 import OpenAI from "openai";
 import type { ChatCompletionCreateParamsNonStreaming } from "openai/resources/chat/completions";
 import type { ProviderConfig } from "./config.js";
-import { MODEL_METADATA } from "./config.js";
+import { MODEL_METADATA, createDefaultConfig, ProviderConfigSchema } from "./config.js";
 import { FallbackHandler } from "./fallback.js";
 import { createLLMSpan, recordProviderMetrics } from "./telemetry.js";
 import type { ChatOptions, ChatResponse, ProviderMetrics } from "./types.js";
+import { createLiteBrain, GUILD_MEMBER_IDS } from '/Users/fuaadabdullah/ForgeMonorepo/GoblinOS/packages/goblins/brains/dist/index.js';
 
 /**
  * Universal provider client with LiteLLM gateway support
@@ -188,7 +189,6 @@ export class ProviderClient {
 export function createProvider(
 	config: Partial<ProviderConfig> = {},
 ): ProviderClient {
-	const { createDefaultConfig, ProviderConfigSchema } = require("./config.js");
 	const defaultConfig = createDefaultConfig();
 	const mergedConfig = ProviderConfigSchema.parse({
 		...defaultConfig,
@@ -227,3 +227,9 @@ function normalizeMessageContent(message: ChatMessage): string {
 
 	return "";
 }
+
+// GoblinOS Brains Package Available!
+// Available guild members: dregg-embercode, vanta-lumin, volt-furnace, magnolia-nightbloom, mags-charietto, sentenial-ledgerwarden, hex-oracle, grim-rune, launcey-gauge
+// ✅ Successfully created LiteBrain for dregg-embercode
+// Brain type: ForgeLiteBrain
+// Metrics server listening on port 9090

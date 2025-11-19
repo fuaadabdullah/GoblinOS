@@ -1,6 +1,5 @@
 """PostgreSQL Testcontainer for Python integration tests."""
 
-import asyncio
 from typing import Optional
 from testcontainers.postgres import PostgresContainer as TCPostgresContainer
 import asyncpg

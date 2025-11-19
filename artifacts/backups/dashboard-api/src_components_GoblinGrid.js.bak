@@ -1,0 +1,4 @@
+export { default } from "./GoblinGrid";
+export * from "./GoblinGrid";
+// Backup for GoblinGrid.js
+(backup of src/components/GoblinGrid.js)

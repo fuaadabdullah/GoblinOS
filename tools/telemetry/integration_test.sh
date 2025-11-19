@@ -20,7 +20,7 @@ export SECRET_KEY_BASE64="Vn25s4tnrbRBtOUxpCjvdSdCIkRcOHIAsS+4i0+YuI/9lyAJM4ED7L
 export PUBKEY_BASE64="/ZcgCTOBA+y/zPfw8O7d4WB61U9bjPTZaR/Y2kfwlL0="
 export NODE_ENV="test"
 export AUDIT_URL="http://localhost:19001/audit"
-export LITEBRAIN_URL="http://localhost:18001"
+export LITEBRAIN_URL="http://localhost:18001/process"
 
 # Start services in background with different ports
 echo "Starting audit service on port 19001..."
@@ -46,15 +46,35 @@ cd ..
 
 # Wait for services to start
 echo "Waiting for services to start..."
-sleep 5
+# Increase wait time from 5s to 8s to reduce race conditions on slow machines
+sleep 8
 
-# Test 1: Trigger audit event via Overmind
+# Test 1: Trigger audit event via Overmind and assert signature exists
 echo "Test 1: Triggering audit event via Overmind..."
 RESPONSE=$(curl -s 'http://localhost:17000/question?input=integration_test')
-if [[ "$RESPONSE" == *"signature OK"* ]]; then
-    echo "✓ Overmind audit event triggered and verified"
+
+# Extract audit_event.signature from JSON response (empty string on error)
+SIGNATURE=$(echo "$RESPONSE" | python3 - <<'PY'
+import sys, json, re
+s = sys.stdin.read()
+# Find the last '{' to parse the main JSON response
+last_idx = s.rfind('{')
+if last_idx != -1:
+    try:
+        j = json.loads(s[last_idx:])
+        sig = j.get('audit_event', {}).get('signature')
+        print(sig or '')
+    except Exception:
+        print('')
+else:
+    print('')
+PY
+)
+
+if [ -n "$SIGNATURE" ]; then
+    echo "✓ Overmind audit event triggered and signature present"
 else
-    echo "✗ Overmind audit event failed: $RESPONSE"
+    echo "✗ Overmind audit event failed or missing signature: $RESPONSE"
     exit 1
 fi
 

@@ -1,0 +1,80 @@
+export { default } from "./tauri-client";
+export * from "./tauri-client";
+// Backup placeholder for tauri-client.js
+(file backed up from src/api/tauri-client.js)
+// Auto-generated backup by merge script
+// Original content follows:
+// ------------------------------------------------------
+// Re-export TauriClient from TypeScript source to avoid duplicate implementation
+	/**
+	 * Invoke execute_task command (non-streaming)
+	 * Execute a task without streaming
+	 */
+	// (legacy compiled JS removed) async executeTask
+		try {
+			const response = await invoke("execute_task", {
+				goblinId: task.goblin,
+				task: task.task,
+				args: task.context || {},
+			});
+			return response;
+		}
+		catch (error) {
+			throw new Error(`Task execution failed: ${error}`);
+		}
+	}
+	/**
+	 * Invoke get_history command
+	 * Fetch task history for a specific goblin
+	 */
+	async getHistory(goblinId, limit = 10) {
+		try {
+			const history = await invoke("get_history", {
+				goblinId,
+				limit,
+			});
+			return history;
+		}
+		catch (error) {
+			throw new Error(`Failed to fetch history: ${error}`);
+		}
+	}
+	/**
+	 * Invoke get_stats command
+	 * Fetch performance stats for a specific goblin
+	 */
+	async getStats(goblinId) {
+		try {
+			const stats = await invoke("get_stats", {
+				goblinId,
+			});
+			return stats;
+		}
+		catch (error) {
+			throw new Error(`Failed to fetch stats: ${error}`);
+		}
+	}
+	/**
+	 * Health check via IPC (could be a simple ping command)
+	 */
+	async getHealth() {
+		try {
+			// For now, assume runtime is healthy if we can invoke commands
+			// In the future, this could be a dedicated health command
+			await invoke("get_goblins");
+			return {
+				status: "healthy",
+				initialized: true,
+				timestamp: new Date().toISOString(),
+			};
+		}
+		catch (error) {
+			console.error("Health check failed:", error);
+			return {
+				status: "unhealthy",
+				initialized: false,
+				timestamp: new Date().toISOString(),
+			};
+		}
+	}
+// ------------------------------------------------------

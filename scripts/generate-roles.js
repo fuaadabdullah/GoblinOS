@@ -7,7 +7,9 @@
 import { readFileSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
-import yaml from "yaml";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const jsyaml = require("js-yaml");
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
@@ -25,7 +27,7 @@ const GUILD_END_MARKER = "<!-- GUILD_SUMMARY_END -->";
 
 function main() {
 	const yamlContent = readFileSync(YAML_PATH, "utf8");
-	const config = yaml.parse(yamlContent);
+	const config = jsyaml.load(yamlContent);
 
 	const lines = [];
 	lines.push("# GoblinOS Roles — Overview");
@@ -191,7 +193,17 @@ function describeMember(member) {
 			? member.tools.owned.map((tool) => `\`${tool}\``).join(", ")
 			: "Brain workflows only";
 
-	return `  - **${member.title} (\`${member.id}\`)** — ${resp}. KPIs: ${kpis}. Tools: ${ownedTools}.`;
+	const selectionTriggers =
+		member.tools && member.tools.selection_rules && member.tools.selection_rules.length > 0
+			? member.tools.selection_rules
+				  .map((rule) => {
+					  if (rule.tool) return `"${rule.trigger}" → ${rule.tool}`;
+					  return `"${rule.trigger}" → Brain only${rule.note ? ` (${rule.note})` : ""}`;
+				  })
+				  .join(", ")
+			: "n/a";
+
+	return `  - **${member.title} (\`${member.id}\`)** — ${resp}. KPIs: ${kpis}. Tools: ${ownedTools}. Selection triggers: ${selectionTriggers}.`;
 }
 
 function buildGuildSummary(guilds, linkPrefix) {
@@ -199,9 +211,7 @@ function buildGuildSummary(guilds, linkPrefix) {
 
 	for (const guild of guilds) {
 		const slug = slugify(guild.name);
-		lines.push(
-			`### ${guild.name} ([full breakdown](${linkPrefix}#${slug}))`,
-		);
+		lines.push(`### ${guild.name} ([full breakdown](${linkPrefix}#${slug}))`);
 		if (guild.charter) {
 			lines.push(`- **Charter:** ${guild.charter}`);
 		}

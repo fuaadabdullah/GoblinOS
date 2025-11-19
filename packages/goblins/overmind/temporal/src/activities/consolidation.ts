@@ -205,7 +205,9 @@ export async function generateEmbeddings(params: {
 	embeddingProvider?: string;
 }): Promise<{ processed: number; failed: number }> {
 	const logger = Context.current().log;
-	logger.info("Generating embeddings for memories", { count: params.memories.length });
+	logger.info("Generating embeddings for memories", {
+		count: params.memories.length,
+	});
 
 	let processed = 0;
 	let failed = 0;
@@ -219,11 +221,13 @@ export async function generateEmbeddings(params: {
 			await axios.post(embeddingEndpoint, {
 				memoryId: memory.id,
 				content: memory.content,
-				provider: params.embeddingProvider || 'ollama',
+				provider: params.embeddingProvider || "ollama",
 			});
 			processed++;
 		} catch (error) {
-			logger.error(`Failed to generate embedding for memory ${memory.id}`, { error });
+			logger.error(`Failed to generate embedding for memory ${memory.id}`, {
+				error,
+			});
 			failed++;
 		}
 	}

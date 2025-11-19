@@ -1,111 +1,79 @@
-// Lightweight Overmind facade: wires memory, providers, and exposes a simple chat API.
+// Overmind Goblin: Implements the GoblinInterface for LLM routing and memory management
 
 import { config } from "dotenv";
-import { createMemoryManager } from "./memory/index.js";
-import * as Ollama from "./providers/ollama.js";
-import type { MemoryManager } from "./memory/index.js";
+import type { ChatRequest, OvermindGoblinConfig } from './types.js';
+import { OvermindLogic } from './logic.js';
+
+// Temporary local interfaces until @goblinos/shared is available
+interface GoblinContext {
+  input: ChatRequest;
+}
+
+interface GoblinResult {
+  success: boolean;
+  output?: any;
+  error?: string;
+  metadata?: Record<string, any>;
+}
+
+interface GoblinCapabilities {
+  name: string;
+  description: string;
+  version: string;
+  inputs: string[];
+  outputs: string[];
+}
 
 // Load environment variables
 config();
 
-export type Overmind = {
-  chat(message: string): Promise<{ response: string; routing: any; metrics: any }>;
-  getConversationHistory(): Array<{ role: string; content: string }>;
-  resetConversation(): void;
-  getAvailableProviders(): string[];
-  getRoutingStats(): Record<string, unknown>;
-  rememberFact(fact: string, metadata?: Record<string, unknown>): Promise<string>;
-  searchMemory(query: string, limit?: number): Promise<any[]>;
-  searchMemoryByVector(query: string, options?: { topK?: number; minScore?: number }): Promise<any[]>;
-  getMemoryStats(): Promise<Record<string, unknown>>;
-};
+export class OvermindGoblin {
+  private logic: OvermindLogic;
 
-function defaultProviders(): string[] {
-  const providers: string[] = [];
-  // Basic detection: if ollama module is available via env, advertise it
-  providers.push("ollama");
-  return providers;
-}
-
-export function createOvermind(): Overmind {
-  const memory: MemoryManager = createMemoryManager();
-
-  // simple routing stats collector
-  const routingStats: Record<string, { calls: number }> = {};
-
-  function recordRoute(provider: string) {
-    routingStats[provider] = routingStats[provider] || { calls: 0 };
-    routingStats[provider].calls++;
+  constructor(_config: OvermindGoblinConfig) {
+    this.logic = new OvermindLogic();
   }
 
-  return {
-    async chat(message: string) {
-      // store user message
-      memory.addMessage({ role: "user", content: message });
+  async initialize(): Promise<void> {
+    // Initialize memory and providers
+    // This could load configuration, set up connections, etc.
+  }
 
-      // Build simple context from recent messages
-      const recent = memory.getRecentMessages(5).map((m) => `${m.role}: ${m.content}`);
+  async execute(context: GoblinContext): Promise<GoblinResult> {
+    const overmindContext = context as { input: ChatRequest };
 
-      // Choose provider (basic: ollama)
-      const provider = "ollama";
+    try {
+      const response = await this.logic.processChat(overmindContext.input);
 
-      try {
-        const model = Ollama.selectModel("chat");
-        const responseText = await Ollama.generateWithOllama(model, message, { context: recent });
+      return {
+        success: true,
+        output: response,
+        metadata: {
+          routing: response.routing,
+          metrics: response.metrics,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        metadata: {},
+      };
+    }
+  }
 
-        // store assistant message
-        memory.addMessage({ role: "assistant", content: responseText });
+  async shutdown(): Promise<void> {
+    // Clean up resources
+    // This could close connections, save state, etc.
+  }
 
-        recordRoute(provider);
-
-        return {
-          response: responseText,
-          routing: { provider, model },
-          metrics: { providerCalls: routingStats },
-        };
-      } catch (err) {
-        // Fallback: return canned response
-        const fallback = "(overmind) unable to fetch model response";
-        memory.addMessage({ role: "assistant", content: fallback });
-        return { response: fallback, routing: { provider: "none" }, metrics: {} };
-      }
-    },
-
-    getConversationHistory() {
-      return memory.getConversationHistory().map((m) => ({ role: m.role, content: m.content }));
-    },
-
-    resetConversation() {
-      memory.clearConversation();
-    },
-
-    getAvailableProviders() {
-      return defaultProviders();
-    },
-
-    getRoutingStats() {
-      return routingStats;
-    },
-
-    async rememberFact(fact: string, metadata?: Record<string, unknown>) {
-      // metadata currently ignored; store fact and return id
-      return memory.storeFact(fact, { tags: metadata?.tags as string[] | undefined });
-    },
-
-    async searchMemory(query: string, limit = 10) {
-      const results = await memory.search({ query });
-      return results.slice(0, limit);
-    },
-
-    async searchMemoryByVector(query: string, options?: { topK?: number; minScore?: number }) {
-      const results = await memory.searchByVector(query, options);
-      return results;
-    },
-
-    async getMemoryStats() {
-      return memory.getStats();
-    },
-  } as Overmind;
-}
-
-export type { MemoryManager };
+  getCapabilities(): GoblinCapabilities {
+    return {
+      name: 'overmind',
+      description: 'LLM routing and memory management goblin',
+      version: '1.0.0',
+      inputs: ['ChatRequest'],
+      outputs: ['ChatResponse'],
+    };
+  }
+};

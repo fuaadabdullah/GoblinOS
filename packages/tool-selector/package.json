@@ -14,13 +14,16 @@
 	"scripts": {
 		"build": "tsc",
 		"check": "tsc --noEmit",
-		"dev": "tsc --watch"
+		"dev": "tsc --watch",
+		"demo": "node examples/tool-selection-demo.js"
 	},
-	"dependencies": {
-		"yaml": "^2.8.1"
-	},
+		"dependencies": {
+			"yaml": "^2.8.1",
+			"js-yaml": "^4.1.0"
+		},
 	"devDependencies": {
 		"@types/node": "^20.11.30",
+		"@types/yaml": "^1.9.7",
 		"typescript": "^5.6.2"
 	}
 }

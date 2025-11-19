@@ -1,3 +1,7 @@
+---
+description: "PHASE1_COMPLETE"
+---
+
 # ✅ GoblinOS Tauri Migration - Phase 1 Complete
 
 ## What Was Accomplished

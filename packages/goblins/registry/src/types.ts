@@ -32,6 +32,12 @@ export const GuildToolSchema = z.object({
 	docs: z.string().optional(),
 	tags: z.array(z.string()).optional(),
 	args: z.array(ToolArgumentSchema).optional(),
+	// Interface information for modular goblins
+	interface: z.object({
+		language: z.enum(["typescript", "python"]).optional(),
+		module: z.string().optional(), // e.g., "@goblinos/forge-lite-build"
+		class: z.string().optional(), // e.g., "ForgeLiteBuildGoblin"
+	}).optional(),
 });
 
 export type GuildTool = z.infer<typeof GuildToolSchema>;

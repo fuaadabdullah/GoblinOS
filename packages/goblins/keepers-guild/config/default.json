@@ -1,0 +1,41 @@
+{
+  "secrets_audit": {
+    "scan_paths": ["**/.env*", "**/*.config", "**/secrets.*"],
+    "exclude_patterns": ["**/node_modules/**", "**/.git/**", "**/dist/**"],
+    "secret_patterns": [
+      "(?i)(api[_-]?key|apikey)\\s*[=:]\\s*['\"]([^'\"]*)['\"]",
+      "(?i)(password|passwd|pwd)\\s*[=:]\\s*['\"]([^'\"]*)['\"]",
+      "(?i)(token|bearer)\\s*[=:]\\s*['\"]([^'\"]*)['\"]",
+      "(?i)(secret|key)\\s*[=:]\\s*['\"]([^'\"]*)['\"]"
+    ],
+    "severity_threshold": "medium"
+  },
+  "security_scan": {
+    "enabled_checks": ["file_permissions", "exposed_ports", "weak_passwords", "outdated_packages"],
+    "scan_depth": 3,
+    "timeout_seconds": 300
+  },
+  "storage_cleanup": {
+    "cleanup_types": ["cache", "venv", "logs", "temp"],
+    "max_age_days": 30,
+    "size_threshold_mb": 100,
+    "preserve_paths": [],
+    "dry_run": true
+  },
+  "disk_consolidation": {
+    "target_directory": "./archives",
+    "compression_enabled": true,
+    "max_file_age_days": 90,
+    "consolidation_batch_size": 100
+  },
+  "system_clean": {
+    "clean_system_cache": true,
+    "clean_user_cache": true,
+    "clean_application_cache": true,
+    "preserve_recent": true,
+    "recent_threshold_days": 7
+  },
+  "enable_telemetry": true,
+  "log_level": "INFO",
+  "workspace_root": null
+}

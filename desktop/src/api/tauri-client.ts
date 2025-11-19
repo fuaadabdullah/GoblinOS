@@ -84,13 +84,14 @@ export class TauriRuntimeClient {
 		streaming = false,
 		provider?: string,
 		model?: string,
-	): Promise<GoblinResponse> {
+	): Promise<string> {
 		return invoke("execute_task", {
-			request: { goblin, task, streaming, provider, model },
+			goblinId: goblin,
+			task,
+			streaming,
+			args: { provider, model },
 		});
-	}
-
-	async getHistory(goblin: string, limit = 10): Promise<MemoryEntry[]> {
+	}	async getHistory(goblin: string, limit = 10): Promise<MemoryEntry[]> {
 		return invoke("get_history", { goblin, limit });
 	}
 
@@ -116,34 +117,29 @@ export class TauriRuntimeClient {
 	async executeTaskStreaming(
 		goblin: string,
 		task: string,
-		onChunk: (chunk: string) => void,
-		onComplete?: (response: GoblinResponse) => void,
+		onChunk: (chunk: any) => void,
+		onComplete?: (response: any) => void,
 		provider?: string,
 		model?: string,
 	): Promise<void> {
 		// Start streaming execution
-		const responsePromise = this.executeTask(
-			goblin,
-			task,
-			true,
-			provider,
-			model,
-		);
+		const startPromise = this.executeTask(goblin, task, true, provider, model);
 
-		// Listen for stream events
-		const unlisten = await listen("stream-token", (event: { payload: StreamEvent }) => {
-			const { content, done } = event.payload;
-			onChunk(content);
+		// Listen for task-stream events
+		const unlisten = await listen("task-stream", (event: { payload: any }) => {
+			const payload = event.payload;
+			onChunk(payload);
 
-			if (done) {
+			// Check if this is the final result (has 'result' field)
+			if (payload.result !== undefined) {
 				unlisten();
 				if (onComplete) {
-					responsePromise.then(onComplete);
+					onComplete(payload);
 				}
 			}
 		});
 
-		return responsePromise.then(() => {}); // Return void, completion handled via events
+		return startPromise.then(() => {}); // Return void, completion handled via events
 	}
 
 	async storeApiKey(provider: string, key: string): Promise<void> {

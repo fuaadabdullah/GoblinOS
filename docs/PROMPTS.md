@@ -1,3 +1,7 @@
+---
+description: "PROMPTS"
+---
+
 # Goblin Prompt Templates
 
 Each goblin can carry a basic prompt template to tailor its behavior. The system uses prompts from `goblins.yaml` when available and derives sensible defaults otherwise.

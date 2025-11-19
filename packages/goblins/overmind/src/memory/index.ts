@@ -2,7 +2,7 @@
 
 import { LongTermMemory } from "./long-term.js";
 import { type Message, ShortTermMemory } from "./short-term.js";
-import type { Memory, MemoryManagerConfig, MemoryImportance } from "./types.js";
+import type { Memory, MemoryImportance, MemoryManagerConfig } from "./types.js";
 import { MemoryImportance as ImportanceEnum, MemoryType } from "./types.js";
 import { WorkingMemory } from "./working.js";
 
@@ -40,10 +40,13 @@ export interface MemoryManager {
 			entry: { id: string; content: string; importance: MemoryImportance };
 		}>
 	>;
-	searchByVector(query: string, options?: {
-		topK?: number;
-		minScore?: number;
-	}): Promise<
+	searchByVector(
+		query: string,
+		options?: {
+			topK?: number;
+			minScore?: number;
+		},
+	): Promise<
 		Array<{
 			entry: { id: string; content: string; importance: MemoryImportance };
 			score: number;
@@ -111,8 +114,18 @@ export interface MemoryManager {
 	// Temporal consolidation workflow methods
 	getShortTermMemories(): Promise<Memory[]>;
 	getWorkingMemories(): Promise<Memory[]>;
-	addToWorkingMemory(content: string, importance?: number, tags?: string[], metadata?: Record<string, unknown>): Promise<void>;
-	addToLongTermMemory(content: string, importance?: number, tags?: string[], metadata?: Record<string, unknown>): Promise<void>;
+	addToWorkingMemory(
+		content: string,
+		importance?: number,
+		tags?: string[],
+		metadata?: Record<string, unknown>,
+	): Promise<void>;
+	addToLongTermMemory(
+		content: string,
+		importance?: number,
+		tags?: string[],
+		metadata?: Record<string, unknown>,
+	): Promise<void>;
 	removeFromWorkingMemory(id: string): Promise<void>;
 	removeFromShortTermMemory(id: string): Promise<void>;
 	cleanupMemories(maxAge: string): Promise<number>;
@@ -179,10 +192,16 @@ export function createMemoryManager(
 		...merged.longTerm,
 		// Do not force vectorDimensions here; let LongTermMemory derive it from the embedding provider
 		vectorDimensions: undefined,
-		pineconeApiKey: merged.vectorSearch.pineconeApiKey || merged.longTerm.pineconeApiKey,
-		pineconeIndexName: merged.vectorSearch.pineconeIndexName || merged.longTerm.pineconeIndexName,
-		embeddingProvider: merged.vectorSearch.embeddingProvider as 'ollama' | 'openai' || merged.longTerm.embeddingProvider,
-		embeddingModel: merged.vectorSearch.embeddingModel || merged.longTerm.embeddingModel,
+		pineconeApiKey:
+			merged.vectorSearch.pineconeApiKey || merged.longTerm.pineconeApiKey,
+		pineconeIndexName:
+			merged.vectorSearch.pineconeIndexName ||
+			merged.longTerm.pineconeIndexName,
+		embeddingProvider:
+			(merged.vectorSearch.embeddingProvider as "ollama" | "openai") ||
+			merged.longTerm.embeddingProvider,
+		embeddingModel:
+			merged.vectorSearch.embeddingModel || merged.longTerm.embeddingModel,
 	});
 
 	return {
@@ -256,13 +275,20 @@ export function createMemoryManager(
 			}));
 		},
 
-		async searchByVector(query: string, options?: {
-			topK?: number;
-			minScore?: number;
-		}) {
+		async searchByVector(
+			query: string,
+			options?: {
+				topK?: number;
+				minScore?: number;
+			},
+		) {
 			const results = await longTerm.searchMemoriesByVector(query, options);
 			return results.map(({ fact, score }) => ({
-				entry: { id: fact.id, content: fact.content, importance: fact.importance },
+				entry: {
+					id: fact.id,
+					content: fact.content,
+					importance: fact.importance,
+				},
 				score,
 			}));
 		},
@@ -357,7 +383,10 @@ export function createMemoryManager(
 			return entries.map((entry) => ({
 				id: entry.id,
 				type: MemoryType.WORKING,
-				content: typeof entry.value === 'string' ? entry.value : JSON.stringify(entry.value),
+				content:
+					typeof entry.value === "string"
+						? entry.value
+						: JSON.stringify(entry.value),
 				importance: entry.importance,
 				timestamp: new Date(entry.timestamp),
 				metadata: { accessCount: entry.accessCount },
@@ -366,17 +395,29 @@ export function createMemoryManager(
 
 		async addToWorkingMemory(content: string, importance = 0.5): Promise<void> {
 			const key = `working-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-			const importanceEnum = importance >= 0.8 ? ImportanceEnum.HIGH :
-				importance >= 0.6 ? ImportanceEnum.MEDIUM : ImportanceEnum.LOW;
+			const importanceEnum =
+				importance >= 0.8
+					? ImportanceEnum.HIGH
+					: importance >= 0.6
+						? ImportanceEnum.MEDIUM
+						: ImportanceEnum.LOW;
 			working.set(key, content, importanceEnum);
 		},
 
-		async addToLongTermMemory(content: string, importance = 0.8, tags: string[] = []): Promise<void> {
+		async addToLongTermMemory(
+			content: string,
+			importance = 0.8,
+			tags: string[] = [],
+		): Promise<void> {
 			await longTerm.addMemory({
 				content,
 				type: MemoryType.LONG_TERM,
-				importance: importance >= 0.8 ? ImportanceEnum.HIGH :
-					importance >= 0.6 ? ImportanceEnum.MEDIUM : ImportanceEnum.LOW,
+				importance:
+					importance >= 0.8
+						? ImportanceEnum.HIGH
+						: importance >= 0.6
+							? ImportanceEnum.MEDIUM
+							: ImportanceEnum.LOW,
 				accessCount: 0,
 				tags,
 			});
@@ -398,23 +439,32 @@ export function createMemoryManager(
 				throw new Error(`Invalid maxAge format: ${maxAge}`);
 			}
 
-			const value = parseInt(match[1]);
+			const value = Number.parseInt(match[1]);
 			const unit = match[2];
 			let seconds: number;
 
 			switch (unit) {
-				case 'd': seconds = value * 24 * 60 * 60; break;
-				case 'h': seconds = value * 60 * 60; break;
-				case 'm': seconds = value * 60; break;
-				case 's': seconds = value; break;
-				default: throw new Error(`Invalid time unit: ${unit}`);
+				case "d":
+					seconds = value * 24 * 60 * 60;
+					break;
+				case "h":
+					seconds = value * 60 * 60;
+					break;
+				case "m":
+					seconds = value * 60;
+					break;
+				case "s":
+					seconds = value;
+					break;
+				default:
+					throw new Error(`Invalid time unit: ${unit}`);
 			}
 
 			let cleaned = 0;
 
 			// Clean long-term memories older than cutoff time
 			const longTermMemories = await longTerm.searchMemories({});
-			const cutoffTime = Date.now() - (seconds * 1000);
+			const cutoffTime = Date.now() - seconds * 1000;
 
 			for (const memory of longTermMemories) {
 				// Check if memory is older than cutoff (approximate check)

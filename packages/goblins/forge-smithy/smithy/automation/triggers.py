@@ -17,7 +17,6 @@ import abc
 import asyncio
 from typing import Any, Callable, Dict, Optional
 
-from .engine import AutomationEvent
 
 
 class TriggerEvent:

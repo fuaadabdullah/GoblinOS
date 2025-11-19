@@ -1,0 +1,4 @@
+export { default } from "./GoblinHubPage";
+export * from "./GoblinHubPage";
+// Backup placeholder for GoblinHubPage.js
+(backup of src/pages/GoblinHubPage.js)

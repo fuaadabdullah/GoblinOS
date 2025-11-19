@@ -1,3 +1,7 @@
+---
+description: "TOOL_SELECTION"
+---
+
 # Tool Selection System — Summary
 
 All goblins in GoblinOS now automatically select and invoke tools based on task intent.

@@ -1,0 +1,47 @@
+{
+  "quality_gate": {
+    "enabled_checks": ["lint", "type_check", "security"],
+    "lint_paths": ["apps/forge-lite", "GoblinOS"],
+    "python_lint_command": "ruff check",
+    "typescript_lint_command": "pnpm lint",
+    "fail_on_warnings": false,
+    "max_issues_threshold": null,
+    "exclude_patterns": ["node_modules", ".git", "dist", "build"]
+  },
+  "vault_validation": {
+    "vault_path": "vault",
+    "require_frontmatter": true,
+    "required_frontmatter_fields": ["title", "created", "tags"],
+    "validate_linguist_attributes": true,
+    "check_broken_links": true,
+    "allowed_file_extensions": [".md", ".txt", ".json"],
+    "max_file_size_kb": 1000
+  },
+  "anomaly_detection": {
+    "enabled_detectors": ["metric_spike", "error_rate", "latency"],
+    "time_window_minutes": 60,
+    "sensitivity_threshold": 0.8,
+    "min_confidence_score": 0.7,
+    "baseline_period_days": 7,
+    "alert_channels": ["console"],
+    "false_positive_tolerance": 0.05
+  },
+  "forecasting": {
+    "enabled_metrics": ["build_time", "test_coverage", "error_rate"],
+    "forecast_horizon_days": 30,
+    "risk_threshold_high": 0.8,
+    "risk_threshold_medium": 0.5,
+    "historical_data_days": 90,
+    "confidence_level": 0.95
+  },
+  "documentation": {
+    "auto_generate_api_docs": true,
+    "api_doc_format": "markdown",
+    "update_readme": true,
+    "docs_path": "docs",
+    "include_examples": true
+  },
+  "verbose_logging": false,
+  "dry_run": false,
+  "timeout_seconds": 300
+}

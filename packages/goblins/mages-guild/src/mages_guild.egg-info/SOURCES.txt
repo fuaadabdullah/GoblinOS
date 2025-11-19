@@ -1,0 +1,12 @@
+README.md
+pyproject.toml
+src/mages_guild/__init__.py
+src/mages_guild/goblin.py
+src/mages_guild/logic.py
+src/mages_guild/schema.py
+src/mages_guild/types.py
+src/mages_guild.egg-info/PKG-INFO
+src/mages_guild.egg-info/SOURCES.txt
+src/mages_guild.egg-info/dependency_links.txt
+src/mages_guild.egg-info/requires.txt
+src/mages_guild.egg-info/top_level.txt

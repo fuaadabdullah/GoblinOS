@@ -10,6 +10,6 @@
 		"resolveJsonModule": true,
 		"types": ["node"]
 	},
-	"include": ["src/**/*"],
+	"include": ["src/**/*", "test-scaling.ts"],
 	"references": [{ "path": "../providers" }, { "path": "../registry" }]
 }

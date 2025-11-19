@@ -1,3 +1,7 @@
+---
+description: "GOBLIN_CLI_USAGE"
+---
+
 # GoblinOS CLI - Usage Guide
 
 ## ✅ Full Implementation Complete

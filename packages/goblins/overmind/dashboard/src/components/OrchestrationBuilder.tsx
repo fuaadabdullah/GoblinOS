@@ -10,7 +10,7 @@
  */
 
 import { useState } from "react";
-import type { Goblin } from "../api/runtime-client";
+import type { Goblin } from "../api/tauri-client";
 
 interface WorkflowStep {
 	id: string;
@@ -25,12 +25,14 @@ interface OrchestrationBuilderProps {
 	goblins: Goblin[];
 	onGenerate: (syntax: string) => void;
 	onClose: () => void;
+	onRun?: (syntax: string) => Promise<any> | void;
 }
 
 export function OrchestrationBuilder({
 	goblins,
 	onGenerate,
 	onClose,
+	onRun,
 }: OrchestrationBuilderProps) {
 	const [steps, setSteps] = useState<WorkflowStep[]>([
 		{
@@ -147,7 +149,7 @@ export function OrchestrationBuilder({
 
 	// Get goblin name
 	const getGoblinName = (goblinId: string) => {
-		return goblins.find((g) => g.id === goblinId)?.name || goblinId;
+		return goblins.find((g) => g.id === goblinId)?.title || goblinId;
 	};
 
 	return (
@@ -239,7 +241,7 @@ export function OrchestrationBuilder({
 											>
 												{goblins.map((g) => (
 													<option key={g.id} value={g.id}>
-														{g.name}
+														{g.title}
 													</option>
 												))}
 											</select>
@@ -388,6 +390,18 @@ export function OrchestrationBuilder({
 						disabled={!syntax}
 					>
 						Use This Workflow
+					</button>
+					<button
+						className="run-syntax-btn btn-primary"
+						onClick={async () => {
+							if (!syntax) return;
+							if (onRun) {
+								await onRun(syntax);
+							}
+						}}
+						disabled={!syntax}
+					>
+						Run Plan
 					</button>
 				</div>
 			</div>

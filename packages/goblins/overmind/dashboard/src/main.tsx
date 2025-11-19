@@ -5,11 +5,13 @@ import { BrowserRouter, Link, Navigate, Route, Routes } from "react-router-dom";
 import { AgentsPage } from "./pages/AgentsPage";
 import { CrewsPage } from "./pages/CrewsPage";
 import { GoblinHubPage } from "./pages/GoblinHubPage";
+import { getDefaultClient } from "./api/tauri-client";
 import { KpiPage } from "./pages/KpiPage";
 import { MemoryPage } from "./pages/MemoryPage";
 import { OverviewPage } from "./pages/OverviewPage";
 
 const qc = new QueryClient();
+const defaultClient = getDefaultClient();
 
 function App() {
 	return (
@@ -29,7 +31,7 @@ function App() {
 					</header>
 					<Routes>
 						<Route path="/" element={<Navigate to="/hub" replace />} />
-						<Route path="/hub" element={<GoblinHubPage />} />
+						<Route path="/hub" element={<GoblinHubPage client={defaultClient} />} />
 						<Route path="/overview" element={<OverviewPage />} />
 						<Route path="/kpi" element={<KpiPage />} />
 						<Route path="/crews" element={<CrewsPage />} />

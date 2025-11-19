@@ -1,0 +1,201 @@
+Metadata-Version: 2.4
+Name: goblinos-ingestion-market-data
+Version: 0.1.0
+Summary: Python market data ingestion package for GoblinOS - fetches stock prices from Alpha Vantage, Finnhub, and Polygon
+Author: GoblinOS
+License: MIT
+Keywords: market-data,stocks,alpha-vantage,finnhub,polygon
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: requests>=2.31.0
+Requires-Dist: python-dotenv>=1.0.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.4.0; extra == "dev"
+Requires-Dist: flake8>=6.0.0; extra == "dev"
+Requires-Dist: black>=23.0.0; extra == "dev"
+
+# @goblinos/ingestion-market-data-python
+
+Python market data ingestion package for GoblinOS - fetches stock prices from Alpha Vantage, Finnhub, and Polygon APIs with intelligent caching and fallback.
+
+## Features
+
+- **Multiple Data Providers**: Alpha Vantage → Finnhub → Polygon fallback chain
+- **Intelligent Caching**: 24-hour TTL with automatic cache management
+- **Type Safety**: Full type hints and validation
+- **Error Handling**: Graceful degradation when APIs fail
+- **Clean API**: Simple interface for agent consumption
+
+## Installation
+
+```bash
+```bash
+pip install git+https://github.com/your-org/GoblinOS.git#subdirectory=GoblinOS/packages/ingestion-market-data-python
+```
+```
+
+Or add to your `requirements.txt`:
+
+```
+goblinos-ingestion-market-data @ git+https://github.com/your-org/GoblinOS.git#subdirectory=GoblinOS/packages/ingestion-market-data-python
+```
+
+## Configuration
+
+Set your API keys as environment variables:
+
+```bash
+export ALPHA_VANTAGE_API_KEY="your_key_here"
+export FINNHUB_API_KEY="your_key_here"
+export POLYGON_API_KEY="your_key_here"
+```
+
+Or pass them programmatically:
+
+```python
+from goblinos_ingestion_market_data import create_market_data_provider
+
+config = {
+    'alpha_vantage_key': 'your_alpha_vantage_key',
+    'finnhub_key': 'your_finnhub_key',
+    'polygon_key': 'your_polygon_key',
+    'cache_ttl_seconds': 3600  # 1 hour cache
+}
+
+market_data = create_market_data_provider(config)
+```
+
+## Usage
+
+### Basic Usage
+
+```python
+from goblinos_ingestion_market_data import create_market_data_provider
+
+# Create provider (uses environment variables for API keys)
+market_data = create_market_data_provider()
+
+# Get single quote
+quote = market_data.get_quote('AAPL')
+if quote:
+    print(f"AAPL: ${quote['price']:.2f} ({quote['change_percent']})")
+
+# Get multiple quotes
+quotes = market_data.get_quotes(['AAPL', 'GOOGL', 'MSFT'])
+for quote in quotes:
+    print(f"{quote['symbol']}: ${quote['price']:.2f}")
+```
+
+### Trading Agent Example
+
+```python
+from goblinos_ingestion_market_data import create_market_data_provider
+
+def trading_agent():
+    market_data = create_market_data_provider()
+
+    # Watch list
+    symbols = ['SPY', 'QQQ', 'AAPL', 'TSLA']
+
+    quotes = market_data.get_quotes(symbols)
+
+    for quote in quotes:
+        if quote['change'] > 0:
+            print(f"📈 BUY SIGNAL: {quote['symbol']} trending up!")
+        elif quote['change'] < 0:
+            print(f"📉 SELL SIGNAL: {quote['symbol']} trending down!")
+
+if __name__ == "__main__":
+    trading_agent()
+```
+
+## API Reference
+
+### MarketDataService
+
+#### `get_quote(symbol: str) -> Optional[MarketQuote]`
+
+Get current market quote for a single symbol.
+
+**Parameters:**
+
+- `symbol` (str): Stock symbol (e.g., 'AAPL')
+
+**Returns:**
+
+- `MarketQuote` or `None` if unavailable
+
+#### `get_quotes(symbols: List[str]) -> List[MarketQuote]`
+
+Get current market quotes for multiple symbols.
+
+**Parameters:**
+
+- `symbols` (List[str]): List of stock symbols
+
+**Returns:**
+
+- `List[MarketQuote]`: List of available quotes
+
+### MarketQuote Type
+
+```python
+{
+    'symbol': str,           # Stock symbol
+    'price': float,          # Current price
+    'change': float,         # Price change
+    'change_percent': str,   # Change percentage (e.g., '+1.25%')
+    'volume': int,           # Trading volume
+    'timestamp': int,        # Unix timestamp
+    'source': str            # Data source ('alpha_vantage', 'finnhub', 'polygon')
+}
+```
+
+## Data Sources
+
+The package tries providers in this order:
+
+1. **Alpha Vantage** - Primary provider, comprehensive data
+2. **Finnhub** - Fallback, fast and reliable
+3. **Polygon** - Final fallback, good for US stocks
+
+Each provider has different rate limits and data coverage. The package automatically falls back if one fails.
+
+## Caching
+
+- Default TTL: 24 hours (86400 seconds)
+- Cache is stored in memory (resets on restart)
+- Configurable via `cache_ttl_seconds` parameter
+
+## Error Handling
+
+- Network errors automatically retry with fallback providers
+- Invalid API responses are logged and skipped
+- Missing API keys disable respective providers
+- Returns `None` for unavailable symbols
+
+## Development
+
+### Setup
+
+```bash
+cd GoblinOS/packages/ingestion-market-data-python
+pip install -e ".[dev]"
+```
+
+### Testing
+
+```bash
+pytest
+```
+
+### Code Quality
+
+```bash
+black src/
+flake8 src/
+```
+
+## License
+
+MIT

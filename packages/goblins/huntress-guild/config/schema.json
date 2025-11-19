@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "test_analysis": {
+      "type": "object",
+      "properties": {
+        "min_runs_for_flaky_detection": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 5,
+          "description": "Minimum test runs to analyze for flakiness"
+        },
+        "flaky_threshold": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.1,
+          "description": "Failure rate threshold to consider a test flaky"
+        },
+        "enable_pattern_recognition": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable AI-powered pattern recognition"
+        },
+        "log_analysis_depth": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1000,
+          "description": "Number of log lines to analyze"
+        }
+      },
+      "required": ["min_runs_for_flaky_detection", "flaky_threshold", "enable_pattern_recognition", "log_analysis_depth"]
+    },
+    "regression_triage": {
+      "type": "object",
+      "properties": {
+        "git_blame_depth": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 10,
+          "description": "Number of commits to analyze for regression"
+        },
+        "impact_assessment_enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable impact assessment"
+        },
+        "auto_tag_incidents": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically tag incidents"
+        }
+      },
+      "required": ["git_blame_depth", "impact_assessment_enabled", "auto_tag_incidents"]
+    },
+    "signal_scouting": {
+      "type": "object",
+      "properties": {
+        "log_files_patterns": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": ["*.log", "logs/*.log"],
+          "description": "Patterns for log files to monitor"
+        },
+        "early_signal_threshold": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.05,
+          "description": "Threshold for early signal detection"
+        },
+        "trend_analysis_window": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 7,
+          "description": "Days to analyze for trends"
+        }
+      },
+      "required": ["log_files_patterns", "early_signal_threshold", "trend_analysis_window"]
+    },
+    "incident_reporting": {
+      "type": "object",
+      "properties": {
+        "severity_threshold": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"],
+          "default": "medium",
+          "description": "Minimum severity to report"
+        },
+        "auto_resolution_enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable automatic incident resolution"
+        },
+        "notification_channels": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": [],
+          "description": "Channels for incident notifications"
+        }
+      },
+      "required": ["severity_threshold", "auto_resolution_enabled", "notification_channels"]
+    },
+    "enable_telemetry": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable telemetry collection"
+    },
+    "log_level": {
+      "type": "string",
+      "enum": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+      "default": "INFO",
+      "description": "Logging level"
+    },
+    "workspace_root": {
+      "type": ["string", "null"],
+      "default": null,
+      "description": "Workspace root directory"
+    }
+  },
+  "required": ["test_analysis", "regression_triage", "signal_scouting", "incident_reporting", "enable_telemetry", "log_level"]
+}

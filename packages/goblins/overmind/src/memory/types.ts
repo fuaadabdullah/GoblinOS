@@ -41,7 +41,7 @@ export interface LongTermConfig {
 	vectorDimensions: number;
 	pineconeApiKey?: string;
 	pineconeIndexName?: string;
-	embeddingProvider?: 'ollama' | 'openai';
+	embeddingProvider?: "ollama" | "openai";
 	embeddingModel?: string;
 }
 

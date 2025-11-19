@@ -1,77 +1,245 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import request from "supertest";
 
 // Activate the lightweight mock runtime and test env
 process.env.OVERMIND_MOCK = "1";
 process.env.NODE_ENV = "test";
 
-import { app } from "../src/index.ts";
+import { app, kpiStore } from "../src/index.ts";
 
 let server: any;
-let baseUrl = "";
+let agent: request.SuperAgentTest;
 
 beforeAll(() => {
 	server = app.listen(0);
-	// @ts-ignore
-	const port = server.address().port;
-	baseUrl = `http://127.0.0.1:${port}`;
+	agent = request.agent(server);
 });
 
 afterAll(() => {
-	server?.close();
+	server.close();
+});
+
+beforeEach(() => {
+	// Clear KPI store between tests
+	kpiStore.clear();
 });
 
 describe("Bridge API (mocked Overmind)", () => {
 	it("GET /health returns healthy status and providers", async () => {
-		const res = await fetch(`${baseUrl}/health`);
+		const res = await agent.get("/health");
 		expect(res.status).toBe(200);
-		const body = await res.json();
-		expect(body).toHaveProperty("status");
-		expect(body).toHaveProperty("providers");
+		expect(res.body).toHaveProperty("status");
+		expect(res.body).toHaveProperty("providers");
 	});
 
 	it("POST /chat returns response shape", async () => {
-		const res = await fetch(`${baseUrl}/chat`, {
-			method: "POST",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({ message: "hello" }),
-		});
+		const res = await agent
+			.post("/chat")
+			.send({ message: "hello" });
 		expect(res.status).toBe(200);
-		const body = await res.json();
-		expect(body).toHaveProperty("response");
-		expect(body).toHaveProperty("routing");
+		expect(res.body).toHaveProperty("response");
+		expect(res.body).toHaveProperty("routing");
+	});
+
+	it("GET /chat/history returns conversation history", async () => {
+		const res = await agent.get("/chat/history");
+		expect(res.status).toBe(200);
+		expect(res.body).toHaveProperty("messages");
+		expect(Array.isArray(res.body.messages)).toBe(true);
+	});
+
+	it("DELETE /chat/history clears conversation", async () => {
+		const res = await agent.delete("/chat/history");
+		expect(res.status).toBe(200);
+		expect(res.body).toHaveProperty("status", "ok");
+	});
+
+	it("GET /providers returns available providers", async () => {
+		const res = await agent.get("/providers");
+		expect(res.status).toBe(200);
+		expect(res.body).toHaveProperty("providers");
+		expect(Array.isArray(res.body.providers)).toBe(true);
+		expect(res.body.providers).toContain("mock");
+	});	it("GET /providers returns available providers", async () => {
+		const res = await agent.get("/providers");
+		expect(res.status).toBe(200);
+		expect(res.body).toHaveProperty("providers");
+		expect(Array.isArray(res.body.providers)).toBe(true);
+		expect(res.body.providers).toContain("mock");
 	});
 
 	it("POST /api/memory/embeddings stores single content and returns id", async () => {
-		const res = await fetch(`${baseUrl}/api/memory/embeddings`, {
-			method: "POST",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({ content: "important fact" }),
-		});
+		const res = await agent
+			.post("/api/memory/embeddings")
+			.send({ content: "important fact" });
 		expect(res.status).toBe(200);
-		const body = await res.json();
-		expect(body).toHaveProperty("id");
-		expect(body).toHaveProperty("status");
+		expect(res.body).toHaveProperty("id");
+		expect(res.body).toHaveProperty("status");
 	});
 
 	it("GET /memory/search returns results array", async () => {
-		const res = await fetch(`${baseUrl}/memory/search?query=test`);
+		const res = await agent.get("/memory/search?query=test");
 		expect(res.status).toBe(200);
-		const body = await res.json();
-		expect(body).toHaveProperty("results");
-		expect(Array.isArray(body.results)).toBe(true);
+		expect(res.body).toHaveProperty("results");
+		expect(Array.isArray(res.body.results)).toBe(true);
 	});
 
 	it("KPI endpoints accept events and return summary/meta", async () => {
-		const ev = { guild: "forge", goblin: "orchestrator", kpi: "test_kpi", value: 1 };
-		const r1 = await fetch(`${baseUrl}/kpi/event`, {
-			method: "POST",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify(ev),
-		});
+		const ev = {
+			guild: "forge",
+			goblin: "orchestrator",
+			kpi: "test_kpi",
+			value: 1,
+		};
+		const r1 = await agent
+			.post("/kpi/event")
+			.send(ev);
 		expect(r1.status).toBe(200);
-		const r2 = await fetch(`${baseUrl}/kpi/summary`);
+		const r2 = await agent.get("/kpi/summary");
 		expect(r2.status).toBe(200);
-		const r3 = await fetch(`${baseUrl}/kpi/meta`);
+		const r3 = await agent.get("/kpi/meta");
 		expect(r3.status).toBe(200);
+	});
+
+	it("KPI event recording stores events correctly", async () => {
+		const eventData = {
+			guild: "forge",
+			goblin: "orchestrator",
+			kpi: "chat_requests",
+			value: 5,
+			source: "bridge",
+			context: { user_id: "test-user" },
+		};
+
+		const response = await agent
+			.post("/kpi/event")
+			.send(eventData);
+
+		expect(response.status).toBe(200);
+		expect(response.body).toEqual({ status: "ok" });
+
+		// Verify the event was recorded
+		const recordedEvents = kpiStore.getRecordedEvents();
+		expect(recordedEvents).toHaveLength(1);
+		expect(recordedEvents[0]).toMatchObject(eventData);
+		expect(recordedEvents[0]).toHaveProperty("timestamp");
+		expect(typeof recordedEvents[0].timestamp).toBe("number");
+	});
+
+	it("KPI tool invocation recording works", async () => {
+		const toolData = {
+			guild: "forge",
+			goblin: "coder",
+			tool: "search_replace",
+			command: "replace function",
+			success: true,
+			duration_ms: 150,
+			reason: "code improvement",
+		};
+
+		const response = await agent
+			.post("/kpi/tool-invocation")
+			.send(toolData);
+
+		expect(response.status).toBe(200);
+		expect(response.body).toEqual({ status: "ok" });
+
+		// Verify the tool invocation was recorded
+		const recordedInvocations = kpiStore.getRecordedToolInvocations();
+		expect(recordedInvocations).toHaveLength(1);
+		expect(recordedInvocations[0]).toMatchObject(toolData);
+		expect(recordedInvocations[0]).toHaveProperty("timestamp");
+	});
+
+	it("KPI summary aggregates events correctly", async () => {
+		// Record multiple events
+		const events = [
+			{
+				guild: "forge",
+				goblin: "orchestrator",
+				kpi: "chat_requests",
+				value: 1,
+			},
+			{
+				guild: "forge",
+				goblin: "orchestrator",
+				kpi: "chat_requests",
+				value: 2,
+			},
+			{ guild: "crafters", goblin: "coder", kpi: "code_changes", value: 1 },
+		];
+
+		for (const event of events) {
+			await agent
+				.post("/kpi/event")
+				.send(event);
+		}
+
+		// Get summary
+		const response = await agent.get("/kpi/summary");
+		expect(response.status).toBe(200);
+		const summary = response.body;
+
+		expect(summary).toHaveProperty("kpis");
+		expect(summary.kpis.chat_requests).toBe(3); // 1 + 2
+		expect(summary.kpis.code_changes).toBe(1);
+	});
+
+	it("KPI meta returns correct metadata", async () => {
+		// Record events with different guilds/goblins/kpis
+		const events = [
+			{
+				guild: "forge",
+				goblin: "orchestrator",
+				kpi: "chat_requests",
+				value: 1,
+			},
+			{ guild: "crafters", goblin: "coder", kpi: "code_changes", value: 1 },
+			{ guild: "forge", goblin: "analyst", kpi: "analysis_runs", value: 1 },
+		];
+
+		for (const event of events) {
+			await agent
+				.post("/kpi/event")
+				.send(event);
+		}
+
+		// Get meta
+		const response = await agent.get("/kpi/meta");
+		expect(response.status).toBe(200);
+		const meta = response.body;
+
+		expect(meta.guilds).toContain("forge");
+		expect(meta.guilds).toContain("crafters");
+		expect(meta.goblins).toContain("orchestrator");
+		expect(meta.goblins).toContain("coder");
+		expect(meta.goblins).toContain("analyst");
+		expect(meta.kpis).toContain("chat_requests");
+		expect(meta.kpis).toContain("code_changes");
+		expect(meta.kpis).toContain("analysis_runs");
+	});
+
+	it("KPI recent returns most recent events", async () => {
+		// Record multiple events
+		const events = [
+			{ guild: "forge", goblin: "orchestrator", kpi: "event1", value: 1 },
+			{ guild: "forge", goblin: "orchestrator", kpi: "event2", value: 1 },
+			{ guild: "forge", goblin: "orchestrator", kpi: "event3", value: 1 },
+		];
+
+		for (const event of events) {
+			await agent
+				.post("/kpi/event")
+				.send(event);
+		}
+
+		// Get recent events (limit 2)
+		const response = await agent.get("/kpi/recent?limit=2");
+		expect(response.status).toBe(200);
+		const result = response.body;
+
+		expect(result.events).toHaveLength(2);
+		expect(result.events[0].kpi).toBe("event2");
+		expect(result.events[1].kpi).toBe("event3");
 	});
 });

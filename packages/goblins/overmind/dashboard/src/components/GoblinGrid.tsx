@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useState } from "react";
-import type { Goblin } from "../api/runtime-client";
+import type { Goblin } from "../api/tauri-client";
 
 interface GoblinGridProps {
 	goblins: Goblin[];

@@ -1,3 +1,7 @@
+---
+description: "ROUTING"
+---
+
 # Complexity-Based Routing
 
 GoblinOS routes tasks to different models based on estimated complexity, while honoring each goblin’s `litebrain.local` and `litebrain.routers` preferences from `goblins.yaml`.

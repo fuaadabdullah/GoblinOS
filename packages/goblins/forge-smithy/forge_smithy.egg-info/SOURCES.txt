@@ -27,7 +27,12 @@ smithy/automation/cli.py
 smithy/automation/compliance.py
 smithy/automation/compliance_checkers.py
 smithy/automation/config.py
+smithy/automation/engine.py
+smithy/automation/env_validator.py
+smithy/automation/event_bus.py
 smithy/automation/evidence_collectors.py
+smithy/automation/find-duplicates.py
+smithy/automation/models.py
 smithy/automation/pipelines.py
 smithy/automation/policy_engine_integration.py
 smithy/automation/remediation.py
@@ -37,8 +42,11 @@ smithy/automation/scheduler.py
 smithy/automation/secrets.py
 smithy/automation/security.py
 smithy/automation/state.py
+smithy/automation/trigger_manager.py
 smithy/automation/triggers.py
 smithy/automation/workflow.py
+smithy/automation/workflow_manager.py
+smithy/automation/workflows.py
 smithy/automation/plugins/__init__.py
 smithy/automation/plugins/base.py
 smithy/automation/plugins/manager.py
@@ -49,5 +57,12 @@ smithy/plugins/cloud/aws_guardrails/plugin.py
 smithy/plugins/examples/language_python/plugin.py
 smithy/plugins/examples/language_typescript/plugin.py
 smithy/plugins/tooling/docker_daemon/plugin.py
+src/__init__.py
+src/goblin.py
+src/logic.py
+src/schema.py
+src/types.py
+tests/test_automation.py
 tests/test_basic.py
 tests/test_controls.py
+tests/test_ws1a_integration.py

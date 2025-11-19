@@ -4,3 +4,4 @@ packages:
   - "packages/goblin-runtime"
   - "packages/goblin-cli"
   - "tools/goblin-cli"
+  - "desktop"

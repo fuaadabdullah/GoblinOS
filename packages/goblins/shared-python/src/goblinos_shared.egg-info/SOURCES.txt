@@ -1,0 +1,8 @@
+pyproject.toml
+src/goblinos/__init__.py
+src/goblinos/interface.py
+src/goblinos_shared.egg-info/PKG-INFO
+src/goblinos_shared.egg-info/SOURCES.txt
+src/goblinos_shared.egg-info/dependency_links.txt
+src/goblinos_shared.egg-info/requires.txt
+src/goblinos_shared.egg-info/top_level.txt

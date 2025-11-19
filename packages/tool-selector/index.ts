@@ -6,7 +6,18 @@
 import { readFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
-import yaml from "yaml";
+// @ts-ignore
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+// Prefer the 'yaml' package if available; otherwise fallback to 'js-yaml'
+let yaml: any;
+try {
+	// eslint-disable-next-line @typescript-eslint/no-var-requires
+	yaml = require("yaml");
+} catch (err) {
+	// eslint-disable-next-line @typescript-eslint/no-var-requires
+	yaml = require("js-yaml");
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -66,8 +77,8 @@ export class ToolSelector {
 	private goblinMap: Map<string, { goblin: Goblin; guild: Guild }>;
 
 	constructor(configPath: string = join(__dirname, "../../../goblins.yaml")) {
-		const yamlContent = readFileSync(configPath, "utf8");
-		this.config = yaml.parse(yamlContent);
+	const yamlContent = readFileSync(configPath, "utf8");
+	this.config = yaml.parse ? yaml.parse(yamlContent) : yaml.load(yamlContent);
 		this.goblinMap = this.buildGoblinMap();
 	}
 
@@ -251,6 +262,11 @@ export class ToolSelector {
 				command: null,
 				reason: `No tool found for task: "${taskIntent}". Goblin will use brain only.`,
 			};
+		}
+
+		// Ownership Validation: Verify that the selected tool ID is present in the goblin's owned tools list
+		if (!this.canInvokeTool(goblinId, toolId)) {
+			throw new Error(`Permission denied: Goblin ${goblinId} does not own tool ${toolId}`);
 		}
 
 		const command = this.getToolCommand(goblinId, toolId);

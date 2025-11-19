@@ -17,13 +17,95 @@ import { pinoHttp } from "pino-http";
 
 // Temporary mock KPIStore to avoid better-sqlite3 issues
 class MockKPIStore {
-	recordEvent(_ev: any) {}
-	recordToolInvocation(_ev: any) {}
-	summaryFiltered(sinceMs: number, _guild?: string, _goblin?: string) { return { since: Date.now() - sinceMs, kpis: [], tools: [] }; }
-	series(sinceMs: number, _params: any) { return { since: Date.now() - sinceMs, intervalMs: 3600000, points: [] }; }
-	meta() { return { guilds: [], goblins: [], kpis: [] }; }
-	toolSeries(sinceMs: number, _params: any) { return { since: Date.now() - sinceMs, intervalMs: 3600000, points: [] }; }
-	recent(_limit = 5) { return []; }
+	private events: any[] = [];
+	private toolInvocations: any[] = [];
+
+	recordEvent(ev: any) {
+		this.events.push({ ...ev, timestamp: Date.now() });
+	}
+
+	recordToolInvocation(ev: any) {
+		this.toolInvocations.push({ ...ev, timestamp: Date.now() });
+	}
+
+	summaryFiltered(sinceMs: number, guild?: string, goblin?: string) {
+		const since = Date.now() - sinceMs;
+		const filtered = this.events.filter(
+			(e) =>
+				e.timestamp >= since &&
+				(!guild || e.guild === guild) &&
+				(!goblin || e.goblin === goblin),
+		);
+		const kpis = filtered.reduce((acc, e) => {
+			acc[e.kpi] = (acc[e.kpi] || 0) + (e.value || 1);
+			return acc;
+		}, {});
+		const tools = this.toolInvocations
+			.filter(
+				(t) =>
+					t.timestamp >= since &&
+					(!guild || t.guild === guild) &&
+					(!goblin || t.goblin === goblin),
+			)
+			.reduce((acc, t) => {
+				acc[t.tool] = (acc[t.tool] || 0) + 1;
+				return acc;
+			}, {});
+		return { since, kpis, tools };
+	}
+
+	series(sinceMs: number, params: any) {
+		const since = Date.now() - sinceMs;
+		const filtered = this.events.filter(
+			(e) =>
+				e.timestamp >= since &&
+				(!params.guild || e.guild === params.guild) &&
+				(!params.goblin || e.goblin === params.goblin) &&
+				(!params.kpi || e.kpi === params.kpi),
+		);
+		return { since, intervalMs: params.intervalMs || 3600000, points: [] };
+	}
+
+	meta() {
+		const guilds = [
+			...new Set(this.events.map((e) => e.guild).filter(Boolean)),
+		];
+		const goblins = [
+			...new Set(this.events.map((e) => e.goblin).filter(Boolean)),
+		];
+		const kpis = [...new Set(this.events.map((e) => e.kpi).filter(Boolean))];
+		return { guilds, goblins, kpis };
+	}
+
+	toolSeries(sinceMs: number, params: any) {
+		const since = Date.now() - sinceMs;
+		const filtered = this.toolInvocations.filter(
+			(t) =>
+				t.timestamp >= since &&
+				(!params.guild || t.guild === params.guild) &&
+				(!params.goblin || t.goblin === params.goblin) &&
+				(!params.tool || t.tool === params.tool),
+		);
+		return { since, intervalMs: params.intervalMs || 3600000, points: [] };
+	}
+
+	recent(limit = 5) {
+		return this.events.slice(-limit);
+	}
+
+	// Test helper methods
+	getRecordedEvents() {
+		return [...this.events];
+	}
+
+	getRecordedToolInvocations() {
+		return [...this.toolInvocations];
+	}
+
+	clear() {
+		this.events = [];
+		this.toolInvocations = [];
+	}
 }
 
 dotenv.config();
@@ -58,11 +140,16 @@ const kpiStore = new MockKPIStore();
 			// Minimal mock used by tests to avoid heavy initialization
 			overmind = {
 				getAvailableProviders: () => ["mock"],
-				chat: async (msg: string) => ({ response: `echo:${msg}`, routing: { selectedModel: "mock" }, metrics: { cost: 0, latency: 1 } }),
+				chat: async (msg: string) => ({
+					response: `echo:${msg}`,
+					routing: { selectedModel: "mock" },
+					metrics: { cost: 0, latency: 1 },
+				}),
 				getConversationHistory: () => [{ role: "user", content: "hi" }],
 				resetConversation: () => {},
 				getRoutingStats: () => ({ routed: 0 }),
-				rememberFact: async (content: string) => `mock-${Buffer.from(String(content)).toString("hex").slice(0,8)}`,
+				rememberFact: async (content: string) =>
+					`mock-${Buffer.from(String(content)).toString("hex").slice(0, 8)}`,
 				searchMemory: async (_q: string, _l: number) => [],
 				getMemoryStats: async () => ({ count: 0 }),
 				getShortTermMemories: async () => [],
@@ -79,13 +166,19 @@ const kpiStore = new MockKPIStore();
 			// Lazy-import the Overmind runtime to avoid ESM/CJS interop issues during test transforms
 			const mod = await import("@goblinos/overmind");
 			const factory = (mod && mod.createOvermind) as any;
-			if (!factory) throw new Error("createOvermind factory not found in @goblinos/overmind");
+			if (!factory)
+				throw new Error(
+					"createOvermind factory not found in @goblinos/overmind",
+				);
 			overmind = factory();
 			logger.info("🧙‍♂️ Overmind initialized successfully");
 		}
 	} catch (error) {
 		logger.error("Failed to initialize Overmind:", error);
-		process.exit(1);
+		// Don't exit in test environment
+		if (process.env.NODE_ENV !== "test") {
+			process.exit(1);
+		}
 	}
 })();
 
@@ -257,35 +350,49 @@ app.post("/api/memory/embeddings", async (req, res) => {
 			return res.json({ processed: results.length, results });
 		}
 
-			// Single item: { content, memoryId?, provider? }
-			const { content } = body;
-			if (!content) {
-				return res.status(400).json({ error: "content is required" });
-			}
+		// Single item: { content, memoryId?, provider? }
+		const { content } = body;
+		if (!content) {
+			return res.status(400).json({ error: "content is required" });
+		}
 
-			// Idempotency: check for existing facts with same content to avoid duplicates
-			try {
-				const existing = await overmind.searchMemory(String(content), 5);
-				if (Array.isArray(existing) && existing.length > 0) {
-					// look for exact match
-					const match = existing.find((r: any) => String(r.content || r.entry?.content || "").trim() === String(content).trim());
-					if (match) {
-						const existingId = match.id || match.entry?.id || match.entry?.id;
-						return res.json({ id: existingId, status: "existing" });
-					}
+		// Idempotency: check for existing facts with same content to avoid duplicates
+		try {
+			const existing = await overmind.searchMemory(String(content), 5);
+			if (Array.isArray(existing) && existing.length > 0) {
+				// look for exact match
+				const match = existing.find(
+					(r: any) =>
+						String(r.content || r.entry?.content || "").trim() ===
+						String(content).trim(),
+				);
+				if (match) {
+					const existingId = match.id || match.entry?.id || match.entry?.id;
+					return res.json({ id: existingId, status: "existing" });
 				}
-			} catch (err) {
-				// If search fails, continue and attempt to store to avoid blocking embeddings
-				logger.warn("Embedding idempotency check failed, proceeding to store", err);
 			}
+		} catch (err) {
+			// If search fails, continue and attempt to store to avoid blocking embeddings
+			logger.warn(
+				"Embedding idempotency check failed, proceeding to store",
+				err,
+			);
+		}
 
-			// Store the content as a new fact (this will trigger embedding in LongTermMemory if configured)
-			const id = await overmind.rememberFact(String(content), { tags: body.tags });
+		// Store the content as a new fact (this will trigger embedding in LongTermMemory if configured)
+		const id = await overmind.rememberFact(String(content), {
+			tags: body.tags,
+		});
 
-			return res.json({ id, status: "stored" });
+		return res.json({ id, status: "stored" });
 	} catch (error) {
 		logger.error("Embedding generation error:", error);
-		return res.status(500).json({ error: "Failed to process embeddings", message: (error as Error).message });
+		return res
+			.status(500)
+			.json({
+				error: "Failed to process embeddings",
+				message: (error as Error).message,
+			});
 	}
 });
 
@@ -644,6 +751,9 @@ if (process.env.NODE_ENV !== "test") {
 
 // Export app for tests
 export { app };
+
+// Export KPI store for tests
+export { kpiStore };
 
 // Graceful shutdown
 process.on("SIGTERM", () => {

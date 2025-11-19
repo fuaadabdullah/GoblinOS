@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState } from "react";
-import type { HistoryEntry, RuntimeClient } from "../api/runtime-client";
+import type { HistoryEntry, RuntimeClient } from "../api/tauri-client";
 
 interface HistoryPanelProps {
 	client: RuntimeClient;

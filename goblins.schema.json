@@ -1,36 +1,52 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "GoblinOS goblins schema",
-  "type": "object",
-  "required": ["guilds"],
-  "properties": {
-    "guilds": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["id", "name", "toolbelt"],
-        "properties": {
-          "id": {"type": "string"},
-          "name": {"type": "string"},
-          "charter": {"type": "string"},
-          "toolbelt": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": ["id", "name", "command"],
-              "properties": {
-                "id": {"type": "string"},
-                "name": {"type": "string"},
-                "summary": {"type": "string"},
-                "owner": {"type": "string"},
-                "command": {"type": "string"},
-                "safe": {"type": "boolean"},
-                "required_env": {"type": "array", "items": {"type": "string"}}
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "GoblinOS goblins schema",
+	"type": "object",
+	"required": ["guilds"],
+	"additionalProperties": true,
+	"properties": {
+		"guilds": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["name", "toolbelt"],
+				"properties": {
+					"id": { "type": "string" },
+					"name": { "type": "string" },
+					"charter": { "type": "string" },
+					"verbosity": { "type": "string" },
+					"toolbelt": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"required": ["id", "name", "command"],
+							"properties": {
+								"id": { "type": "string" },
+								"name": { "type": "string" },
+								"summary": { "type": "string" },
+								"owner": { "type": "string" },
+								"command": { "type": "string" },
+								"safe": { "type": "boolean" },
+								"required_env": {
+									"type": "array",
+									"items": { "type": "string" }
+								}
+							}
+						}
+					},
+					"members": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": { "type": "string" },
+								"title": { "type": "string" },
+								"brain": { "type": "object" }
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }

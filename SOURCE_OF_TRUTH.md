@@ -1,3 +1,7 @@
+---
+description: "SOURCE_OF_TRUTH"
+---
+
 # GoblinOS — Source of Truth
 
 > Central reference for how GoblinOS is assembled, deployed, and operated across the ForgeMonorepo. Start here before diving into per-package docs.
@@ -41,37 +45,37 @@ Each guild defines a charter, KPI set, toolbelt, and member roster inside `gobli
 <!-- GUILD_SUMMARY_START -->
 ### Forge ([full breakdown](./docs/ROLES.md#forge))
 - **Charter:** Core logic, build graph, performance budgets, break-glass fixes.
-- **Toolbelt owners:** `portfolio-dev` (vanta-lumin), `portfolio-build` (vanta-lumin), `forge-lite-build` (dregg-embercode), `forge-lite-release-build` (dregg-embercode), `forge-lite-release-submit` (dregg-embercode), `framework-migrator` (dregg-embercode)
+- **Toolbelt owners:** `forge-lite-build` (dregg-embercode), `forge-lite-release-build` (dregg-embercode), `forge-lite-release-submit` (dregg-embercode), `framework-migrator` (dregg-embercode)
 - **Goblins:**
-  - **Forge Master (`dregg-embercode`)** — Core logic and build graph management; Performance budgets and optimization. KPIs: `p95_build_time`, `hot_reload_time`, `failed_build_rate`. Tools: `forge-lite-build`, `forge-lite-release-build`, `forge-lite-release-submit`.
+  - **Forge Master (`dregg-embercode`)** — Core logic and build graph management; Performance budgets and optimization. KPIs: `p95_build_time`, `hot_reload_time`, `failed_build_rate`. Tools: `forge-lite-build`, `forge-lite-release-build`, `forge-lite-release-submit`. Selection triggers: "build production bundle" → forge-lite-build, "optimize build performance" → forge-lite-build, "check build time" → forge-lite-build, "build for release" → forge-lite-release-build, "submit to app stores" → forge-lite-release-submit, "port framework" → framework-migrator, "upgrade libraries" → framework-migrator.
 
 ### Crafters ([full breakdown](./docs/ROLES.md#crafters))
 - **Charter:** UI systems, theme tokens, a11y, CLS/LCP budgets; APIs, schemas, queues, idempotency, error budgets.
-- **Toolbelt owners:** `forge-lite-bootstrap` (vanta-lumin), `forge-lite-dev` (vanta-lumin), `forge-lite-api-dev` (volt-furnace), `forge-lite-db-migrate` (volt-furnace), `forge-lite-rls-check` (volt-furnace), `forge-lite-auth-login` (volt-furnace), `forge-lite-market-data-fetch` (volt-furnace), `forge-lite-telemetry-check` (vanta-lumin), `forge-lite-release-build` (dregg-embercode), `forge-lite-release-submit` (dregg-embercode), `forge-lite-export-data` (volt-furnace), `forge-lite-docs-update` (launcey-gauge)
+- **Toolbelt owners:** `portfolio-dev` (vanta-lumin), `portfolio-build` (vanta-lumin), `forge-lite-bootstrap` (vanta-lumin), `repo-bootstrap` (vanta-lumin), `workspace-health` (vanta-lumin), `forge-smithy` (vanta-lumin), `forge-lite-dev` (vanta-lumin), `forge-lite-api-dev` (volt-furnace), `forge-lite-db-migrate` (volt-furnace), `forge-lite-rls-check` (volt-furnace), `forge-lite-auth-login` (volt-furnace), `forge-lite-market-data-fetch` (volt-furnace), `forge-lite-telemetry-check` (vanta-lumin), `forge-lite-export-data` (volt-furnace), `overmind` (volt-furnace)
 - **Goblins:**
-  - **Glyph Scribe (`vanta-lumin`)** — UI systems and component architecture; Theme tokens and design system management. KPIs: `cls`, `lcp`, `a11y_score`. Tools: `portfolio-dev`, `portfolio-build`, `forge-lite-bootstrap`, `forge-lite-dev`, `forge-lite-telemetry-check`, `forge-lite-docs-update`.
-  - **Socketwright (`volt-furnace`)** — API design and implementation; Schema management and validation. KPIs: `p99_latency`, `error_rate`, `schema_drift`. Tools: `forge-lite-api-dev`, `forge-lite-db-migrate`, `forge-lite-rls-check`, `forge-lite-auth-login`, `forge-lite-market-data-fetch`, `forge-lite-export-data`.
+  - **Glyph Scribe (`vanta-lumin`)** — UI systems and component architecture; Theme tokens and design system management. KPIs: `cls`, `lcp`, `a11y_score`. Tools: `portfolio-dev`, `portfolio-build`, `forge-lite-bootstrap`, `repo-bootstrap`, `workspace-health`, `forge-smithy`, `forge-lite-dev`, `forge-lite-telemetry-check`. Selection triggers: "bootstrap forge lite repo" → forge-lite-bootstrap, "setup forge lite environment" → forge-lite-bootstrap, "initialize forge lite project" → forge-lite-bootstrap, "bootstrap repository" → repo-bootstrap, "setup development environment" → repo-bootstrap, "check workspace health" → workspace-health, "run health checks" → workspace-health, "setup python environment" → forge-smithy, "python development tooling" → forge-smithy, "start portfolio dev server" → portfolio-dev, "build portfolio" → portfolio-build, "start forge lite UI development" → forge-lite-dev, "test UI components" → forge-lite-dev, "check telemetry integration" → forge-lite-telemetry-check, "update documentation" → mages-guild-docs-update.
+  - **Socketwright (`volt-furnace`)** — API design and implementation; Schema management and validation. KPIs: `p99_latency`, `error_rate`, `schema_drift`. Tools: `forge-lite-api-dev`, `forge-lite-db-migrate`, `forge-lite-rls-check`, `forge-lite-auth-login`, `forge-lite-market-data-fetch`, `forge-lite-export-data`, `overmind`. Selection triggers: "start API server" → forge-lite-api-dev, "test API endpoints" → forge-lite-api-dev, "debug backend logic" → forge-lite-api-dev, "run db migrations" → forge-lite-db-migrate, "check rls policies" → forge-lite-rls-check, "auth login" → forge-lite-auth-login, "fetch market data" → forge-lite-market-data-fetch, "export user data" → forge-lite-export-data, "AI trading assistance" → overmind, "LLM routing" → overmind.
 
 ### Huntress ([full breakdown](./docs/ROLES.md#huntress))
 - **Charter:** Flaky test hunts, regression triage, incident tagging; early-signal scouting, log mining, trend surfacing.
-- **Toolbelt owners:** `forge-lite-test` (magnolia-nightbloom), `forge-lite-e2e-test` (magnolia-nightbloom), `forge-lite-smoke-test` (magnolia-nightbloom), `forge-lite-feedback-export` (magnolia-nightbloom)
+- **Toolbelt owners:** `huntress-guild-analyze-tests` (magnolia-nightbloom), `huntress-guild-triage-regression` (magnolia-nightbloom), `huntress-guild-scout-signals` (magnolia-nightbloom), `huntress-guild-report-incidents` (magnolia-nightbloom)
 - **Goblins:**
-  - **Vermin Huntress (`magnolia-nightbloom`)** — Flaky test identification and remediation; Regression triage and root cause analysis. KPIs: `flaky_rate`, `mttr_test_failures`. Tools: `forge-lite-test`, `forge-lite-e2e-test`, `forge-lite-smoke-test`, `forge-lite-feedback-export`.
-  - **Omenfinder (`mags-charietto`)** — Early-signal detection and alerting; Log mining and pattern recognition. KPIs: `valid_early_signals`, `false_positive_rate`. Tools: Brain workflows only.
+  - **Vermin Huntress (`magnolia-nightbloom`)** — Flaky test identification and remediation; Regression triage and root cause analysis. KPIs: `flaky_rate`, `mttr_test_failures`. Tools: `huntress-guild-analyze-tests`, `huntress-guild-triage-regression`, `huntress-guild-scout-signals`, `huntress-guild-report-incidents`. Selection triggers: "analyze tests" → huntress-guild-analyze-tests, "identify flaky tests" → huntress-guild-analyze-tests, "triage regression" → huntress-guild-triage-regression, "regression check" → huntress-guild-triage-regression, "scout signals" → huntress-guild-scout-signals, "analyze logs" → huntress-guild-scout-signals, "report incidents" → huntress-guild-report-incidents, "analyze bug reports" → huntress-guild-report-incidents.
+  - **Omenfinder (`mags-charietto`)** — Early-signal detection and alerting; Log mining and pattern recognition. KPIs: `valid_early_signals`, `false_positive_rate`. Tools: Brain workflows only. Selection triggers: "analyze logs" → Brain only (Uses brain for log analysis, no external tools).
 
 ### Keepers ([full breakdown](./docs/ROLES.md#keepers))
 - **Charter:** Secrets, licenses, SBOM, signatures, backups, attestations.
-- **Toolbelt owners:** Brain-driven workflows only; see member tool ownership below.
+- **Toolbelt owners:** `keepers-guild-secrets-audit` (sentenial-ledgerwarden), `keepers-guild-security-scan` (sentenial-ledgerwarden), `keepers-guild-storage-cleanup` (sentenial-ledgerwarden), `keepers-guild-system-clean` (sentenial-ledgerwarden), `keepers-guild-digital-purge` (sentenial-ledgerwarden), `keepers-guild-device-purge` (sentenial-ledgerwarden)
 - **Goblins:**
-  - **Sealkeeper (`sentenial-ledgerwarden`)** — Secrets management and rotation; License compliance and tracking. KPIs: `secrets_rotated`, `sbom_drift`, `unsigned_artifacts`. Tools: Brain workflows only.
+  - **Sealkeeper (`sentenial-ledgerwarden`)** — Secrets management and rotation; License compliance and tracking. KPIs: `secrets_rotated`, `sbom_drift`, `unsigned_artifacts`. Tools: `keepers-guild-secrets-audit`, `keepers-guild-security-scan`, `keepers-guild-storage-cleanup`, `keepers-guild-system-clean`, `keepers-guild-digital-purge`, `keepers-guild-device-purge`. Selection triggers: "audit secrets" → keepers-guild-secrets-audit, "check API key hygiene" → keepers-guild-secrets-audit, "run security scan" → keepers-guild-security-scan, "audit compliance" → keepers-guild-security-scan, "cleanup storage" → keepers-guild-storage-cleanup, "weekly cleanup" → keepers-guild-storage-cleanup, "system cleanup" → keepers-guild-system-clean, "clear caches" → keepers-guild-system-clean, "run digital purge" → keepers-guild-digital-purge, "audit my accounts" → keepers-guild-digital-purge, "clean my device" → keepers-guild-device-purge, "purge local data" → keepers-guild-device-purge, "rotate secrets" → Brain only (Uses brain + secrets_manage.sh script), "validate SBOM" → Brain only (Uses brain for analysis).
 
 ### Mages ([full breakdown](./docs/ROLES.md#mages))
 - **Charter:** Forecasting, anomaly detection, and quality gates for releases.
-- **Toolbelt owners:** `forge-lite-lint` (launcey-gauge), `forge-lite-docs-update` (launcey-gauge)
+- **Toolbelt owners:** `mages-guild-quality-lint` (launcey-gauge), `mages-guild-vault-validate` (launcey-gauge), `mages-guild-anomaly-detect` (grim-rune), `mages-guild-forecast-risk` (hex-oracle), `mages-guild-docs-update` (launcey-gauge)
 - **Goblins:**
-  - **Forecasting Fiend (`hex-oracle`)** — Release risk scoring and prediction; Incident likelihood forecasting. KPIs: `forecast_mae`, `forecast_mape`, `release_risk_auc`. Tools: Brain workflows only.
-  - **Glitch Whisperer (`grim-rune`)** — Anomaly detection on metrics, logs, and traces; Auto-ticket creation for detected issues. KPIs: `anomalies_preprod`, `alert_precision`, `alert_recall`. Tools: Brain workflows only.
-  - **Fine Spellchecker (`launcey-gauge`)** — Lint and code quality enforcement; Test coverage and quality gates. KPIs: `pr_gate_pass_rate`, `violations_per_kloc`. Tools: `forge-lite-lint`, `forge-lite-docs-update`.
+  - **Forecasting Fiend (`hex-oracle`)** — Release risk scoring and prediction; Incident likelihood forecasting. KPIs: `forecast_mae`, `forecast_mape`, `release_risk_auc`. Tools: `mages-guild-forecast-risk`. Selection triggers: "forecast release risk" → mages-guild-forecast-risk, "assess deployment safety" → mages-guild-forecast-risk, "predict incident likelihood" → mages-guild-forecast-risk, "capacity planning" → Brain only (Uses brain for predictive modeling).
+  - **Glitch Whisperer (`grim-rune`)** — Anomaly detection on metrics, logs, and traces; Auto-ticket creation for detected issues. KPIs: `anomalies_preprod`, `alert_precision`, `alert_recall`. Tools: `mages-guild-anomaly-detect`. Selection triggers: "detect anomalies" → mages-guild-anomaly-detect, "analyze metrics" → mages-guild-anomaly-detect, "check system performance" → mages-guild-anomaly-detect, "auto-ticket creation" → Brain only (Uses brain for anomaly detection).
+  - **Fine Spellchecker (`launcey-gauge`)** — Lint and code quality enforcement; Test coverage and quality gates. KPIs: `pr_gate_pass_rate`, `violations_per_kloc`. Tools: `mages-guild-quality-lint`, `mages-guild-docs-update`. Selection triggers: "run linters" → mages-guild-quality-lint, "check code quality" → mages-guild-quality-lint, "validate PR" → mages-guild-quality-lint, "update documentation" → mages-guild-docs-update, "generate API docs" → mages-guild-docs-update.
 <!-- GUILD_SUMMARY_END -->
 
 ## 4. Goblin Lifecycle (End to End)
@@ -155,7 +159,7 @@ Each guild defines a charter, KPI set, toolbelt, and member roster inside `gobli
 2. For GoblinOS-specific work:
    - Mirror lint/test/build locally (`pnpm lint:fix && pnpm test:coverage && pnpm build`).
    - Keep guild docs in sync: run `pnpm run generate:roles` (or `pnpm run generate:roles:check` to assert cleanliness) whenever `goblins.yaml` or `scripts/generate-roles.js` changes—CI will reject PRs if these files drift.
-   - Update this Source of Truth if you introduce new surfaces, env contracts, or operational runbooks.
+   - Update this Source of Truth if you introduce new surfaces, env contracts, or operational runbooks. When editing, also fix any pre-existing typos or formatting issues you notice.
    - Attach telemetry/audit notes for anything that touches `tools/telemetry`.
 3. Add or update Changesets for any published package impact.
 4. Keep secrets out of commits; rely on the scripts/templates listed above.

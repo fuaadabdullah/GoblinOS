@@ -47,7 +47,8 @@
 		"runtime:build": "pnpm --filter @goblinos/goblin-runtime build && pnpm --filter @goblinos/goblin-cli build",
 		"hub:dev": "pnpm -C packages/goblins/overmind/dashboard dev",
 		"hub:build": "pnpm -C packages/goblins/overmind/dashboard build",
-		"hub:preview": "pnpm -C packages/goblins/overmind/dashboard preview"
+		"hub:preview": "pnpm -C packages/goblins/overmind/dashboard preview",
+		"integration-tests": "node tools/goblin-cli/integration-tests.js"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
@@ -56,6 +57,7 @@
 		"@vitest/coverage-v8": "^2.0.5",
 		"dependency-cruiser": "^16.8.0",
 		"eslint-config-prettier": "^10.1.8",
+		"js-yaml": "^4.1.0",
 		"jscpd": "^4.0.5",
 		"jsdom": "^24.0.0",
 		"lefthook": "^1.7.0",

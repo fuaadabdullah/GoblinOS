@@ -1,0 +1,256 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Mages Guild Configuration Schema",
+  "description": "Configuration schema for Mages Guild quality gates and validation",
+  "type": "object",
+  "properties": {
+    "quality_gate": {
+      "type": "object",
+      "description": "Configuration for quality gate operations",
+      "properties": {
+        "enabled_checks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["lint", "type_check", "security", "coverage", "formatting"]
+          },
+          "default": ["lint", "type_check", "security"],
+          "description": "List of quality checks to enable"
+        },
+        "lint_paths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["apps/forge-lite", "GoblinOS"],
+          "description": "Paths to run linting on"
+        },
+        "python_lint_command": {
+          "type": "string",
+          "default": "ruff check",
+          "description": "Command to run Python linting"
+        },
+        "typescript_lint_command": {
+          "type": "string",
+          "default": "pnpm lint",
+          "description": "Command to run TypeScript linting"
+        },
+        "fail_on_warnings": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to fail quality gates on warnings"
+        },
+        "max_issues_threshold": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "default": null,
+          "description": "Maximum number of issues allowed before failing"
+        },
+        "exclude_patterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["node_modules", ".git", "dist", "build"],
+          "description": "File patterns to exclude from quality checks"
+        }
+      },
+      "required": ["enabled_checks", "lint_paths", "python_lint_command", "typescript_lint_command", "fail_on_warnings", "exclude_patterns"]
+    },
+    "vault_validation": {
+      "type": "object",
+      "description": "Configuration for vault validation operations",
+      "properties": {
+        "vault_path": {
+          "type": "string",
+          "default": "vault",
+          "description": "Path to the Obsidian vault"
+        },
+        "require_frontmatter": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether YAML frontmatter is required in all notes"
+        },
+        "required_frontmatter_fields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["title", "created", "tags"],
+          "description": "Required fields in YAML frontmatter"
+        },
+        "validate_linguist_attributes": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to validate linguist attributes in frontmatter"
+        },
+        "check_broken_links": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to check for broken internal links"
+        },
+        "allowed_file_extensions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [".md", ".txt", ".json"],
+          "description": "Allowed file extensions in vault"
+        },
+        "max_file_size_kb": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1000,
+          "description": "Maximum file size in KB"
+        }
+      },
+      "required": ["vault_path", "require_frontmatter", "required_frontmatter_fields", "validate_linguist_attributes", "check_broken_links", "allowed_file_extensions", "max_file_size_kb"]
+    },
+    "anomaly_detection": {
+      "type": "object",
+      "description": "Configuration for anomaly detection operations",
+      "properties": {
+        "enabled_detectors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["metric_spike", "error_rate", "latency", "resource_exhaustion"]
+          },
+          "default": ["metric_spike", "error_rate", "latency"],
+          "description": "Types of anomaly detectors to enable"
+        },
+        "time_window_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440,
+          "default": 60,
+          "description": "Time window for anomaly detection in minutes"
+        },
+        "sensitivity_threshold": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.8,
+          "description": "Sensitivity threshold for anomaly detection (0-1)"
+        },
+        "min_confidence_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.7,
+          "description": "Minimum confidence score required for anomaly alerts"
+        },
+        "baseline_period_days": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 7,
+          "description": "Number of days to use for establishing baseline"
+        },
+        "alert_channels": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["console"],
+          "description": "Channels to send anomaly alerts to"
+        },
+        "false_positive_tolerance": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.05,
+          "description": "Acceptable false positive rate (0-1)"
+        }
+      },
+      "required": ["enabled_detectors", "time_window_minutes", "sensitivity_threshold", "min_confidence_score", "baseline_period_days", "alert_channels", "false_positive_tolerance"]
+    },
+    "forecasting": {
+      "type": "object",
+      "description": "Configuration for release risk forecasting",
+      "properties": {
+        "enabled_metrics": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["build_time", "test_coverage", "error_rate"],
+          "description": "Metrics to include in forecasting"
+        },
+        "forecast_horizon_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365,
+          "default": 30,
+          "description": "Number of days to forecast ahead"
+        },
+        "risk_threshold_high": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.8,
+          "description": "Risk score threshold for high risk (0-1)"
+        },
+        "risk_threshold_medium": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.5,
+          "description": "Risk score threshold for medium risk (0-1)"
+        },
+        "historical_data_days": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 90,
+          "description": "Days of historical data to analyze"
+        },
+        "confidence_level": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.95,
+          "description": "Confidence level for risk assessments (0-1)"
+        }
+      },
+      "required": ["enabled_metrics", "forecast_horizon_days", "risk_threshold_high", "risk_threshold_medium", "historical_data_days", "confidence_level"]
+    },
+    "documentation": {
+      "type": "object",
+      "description": "Configuration for documentation operations",
+      "properties": {
+        "auto_generate_api_docs": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to auto-generate API documentation"
+        },
+        "api_doc_format": {
+          "type": "string",
+          "enum": ["markdown", "html", "json"],
+          "default": "markdown",
+          "description": "Format for generated API documentation"
+        },
+        "update_readme": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to update README files automatically"
+        },
+        "docs_path": {
+          "type": "string",
+          "default": "docs",
+          "description": "Path to documentation directory"
+        },
+        "include_examples": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to include usage examples in docs"
+        }
+      },
+      "required": ["auto_generate_api_docs", "api_doc_format", "update_readme", "docs_path", "include_examples"]
+    },
+    "verbose_logging": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable verbose logging for debugging"
+    },
+    "dry_run": {
+      "type": "boolean",
+      "default": false,
+      "description": "Run operations in dry-run mode without making changes"
+    },
+    "timeout_seconds": {
+      "type": "integer",
+      "minimum": 30,
+      "maximum": 3600,
+      "default": 300,
+      "description": "Timeout for operations in seconds"
+    }
+  },
+  "required": ["quality_gate", "vault_validation", "anomaly_detection", "forecasting", "documentation", "verbose_logging", "dry_run", "timeout_seconds"]
+}

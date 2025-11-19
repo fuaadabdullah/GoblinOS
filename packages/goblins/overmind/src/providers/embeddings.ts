@@ -9,7 +9,7 @@ export interface EmbeddingProvider {
 export class OllamaEmbeddingProvider implements EmbeddingProvider {
 	dimension = 1024; // qwen2.5:3b dimension
 
-	constructor(private model: string = "qwen2.5:3b") {}
+	constructor(private model = "qwen2.5:3b") {}
 
 	async generate(text: string): Promise<number[]> {
 		const { embedWithOllama } = await import("../providers/ollama.js");
@@ -31,15 +31,15 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
 
 	constructor(
 		private apiKey: string,
-		private model: string = "text-embedding-3-small"
+		private model = "text-embedding-3-small",
 	) {}
 
 	async generate(text: string): Promise<number[]> {
-		const response = await fetch('https://api.openai.com/v1/embeddings', {
-			method: 'POST',
+		const response = await fetch("https://api.openai.com/v1/embeddings", {
+			method: "POST",
 			headers: {
-				'Authorization': `Bearer ${this.apiKey}`,
-				'Content-Type': 'application/json',
+				Authorization: `Bearer ${this.apiKey}`,
+				"Content-Type": "application/json",
 			},
 			body: JSON.stringify({
 				input: text,
@@ -56,11 +56,11 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
 	}
 
 	async generateBatch(texts: string[]): Promise<number[][]> {
-		const response = await fetch('https://api.openai.com/v1/embeddings', {
-			method: 'POST',
+		const response = await fetch("https://api.openai.com/v1/embeddings", {
+			method: "POST",
 			headers: {
-				'Authorization': `Bearer ${this.apiKey}`,
-				'Content-Type': 'application/json',
+				Authorization: `Bearer ${this.apiKey}`,
+				"Content-Type": "application/json",
 			},
 			body: JSON.stringify({
 				input: texts,
@@ -77,11 +77,14 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
 	}
 }
 
-export function createEmbeddingProvider(type: 'ollama' | 'openai', config: any): EmbeddingProvider {
+export function createEmbeddingProvider(
+	type: "ollama" | "openai",
+	config: any,
+): EmbeddingProvider {
 	switch (type) {
-		case 'ollama':
+		case "ollama":
 			return new OllamaEmbeddingProvider(config.model);
-		case 'openai':
+		case "openai":
 			return new OpenAIEmbeddingProvider(config.apiKey, config.model);
 		default:
 			throw new Error(`Unknown embedding provider type: ${type}`);

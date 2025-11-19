@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useState } from "react";
-import type { GoblinStats, RuntimeClient } from "../api/runtime-client";
+import type { GoblinStats, RuntimeClient } from "../api/tauri-client";
 
 interface StatsPanelProps {
 	client: RuntimeClient;

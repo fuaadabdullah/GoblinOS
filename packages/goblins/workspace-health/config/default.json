@@ -1,0 +1,8 @@
+{
+	"runEslint": true,
+	"runTypecheck": true,
+	"runTests": true,
+	"runSmoke": true,
+	"smokeUrl": "http://localhost:3000",
+	"timeout": 30000
+}
