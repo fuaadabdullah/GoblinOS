@@ -219,7 +219,82 @@ The Overmind bridge package contains test helpers for asserting KPI events. See:
 ## 📦 Releasing
 
 ### CI / GitHub Actions
-Workflows that run per-package checks (tests, lint, typecheck) live under `.github/workflows/` at the GoblinOS repository root. To keep CI discoverable by GitHub, workflows were moved from package-local `.github/workflows` into `GoblinOS/.github/workflows` and use path-based triggers (e.g. `packages/tool-layer/**`). This ensures package-level tests run when their source changes while still letting us centralize CI in the repo root.
+
+Workflows that run per-package checks (tests, lint, typecheck) live under `.github/workflows/` at the GoblinOS repository root. To keep CI discoverable by GitHub, we've centralized package-level workflows at `GoblinOS/.github/workflows` and use path-based triggers (for example: `packages/tool-layer/**`). This allows us to run per-package jobs only when relevant files change, keeps per-package logic consistent, and makes CI discoverable by GitHub.
+
+Where to put workflows
+
+- For packages that are still part of the monorepo and not a standalone repo, add CI jobs to `GoblinOS/.github/workflows` and use a path filter (dorny/paths-filter). This keeps centralized control and reduces duplication.
+- For packages managed as independent repositories (they contain a `.git` and have separate ownership), keep CI in the package root (e.g., `packages/your-package/.github/workflows`).
+
+How to add CI for a new package (Node example)
+
+1. Add the package directory to `GoblinOS/pnpm-workspace.yaml` if missing.
+2. Add a path-filtered job in `GoblinOS/.github/workflows/packages-tests.yml` that runs the package steps.
+
+Example snippet for a Node package job (add to `packages-tests.yml`):
+
+```yaml
+my-package:
+  needs: filter
+  if: needs.filter.outputs.my-package == 'true'
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - uses: pnpm/action-setup@v2
+      with:
+        version: 8
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'pnpm'
+    - name: Install
+      run: cd packages/my-package && pnpm install
+    - name: Test
+      run: cd packages/my-package && pnpm test
+    - name: Typecheck
+      run: cd packages/my-package && pnpm typecheck
+    - name: Lint
+      run: cd packages/my-package && pnpm lint
+```
+
+Example snippet for a Python package job:
+
+```yaml
+python-package:
+  needs: filter
+  if: needs.filter.outputs.python-package == 'true'
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    - name: Install venv and deps
+      run: |
+        python -m venv .venv
+        . .venv/bin/activate
+        pip install -r packages/python-package/requirements.txt
+    - name: Run tests
+      run: cd packages/python-package && pytest
+    - name: Lint
+      run: cd packages/python-package && ruff check
+```
+
+CI best practices
+
+- Use path filters to only run per-package CI when relevant files change.
+- Cache package managers (pnpm store, pip wheels) to speed up CI.
+- Keep job steps small and idempotent: install, test, typecheck, lint.
+- Where a package publishes to npm/PyPI, set up release workflows that also validate package versioning (we use Changesets for Node publishing).
+- If a package needs non-trivial resources (databases, external services), add a separate integration job or require a label to enable the test run.
+
+Enforcement and housekeeping
+
+- Avoid placing `.github/workflows` in package subfolders unless that package is an independent repo—GitHub Actions ignores nested workflow folders if they're not repo roots.
+- If you'd like, we can add a small CI check to detect accidental `packages/*/.github/workflows` and fail fast to avoid confusion.
+
 
 Releases are automated:
 
